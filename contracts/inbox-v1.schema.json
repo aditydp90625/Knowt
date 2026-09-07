@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://knowt.local/contracts/inbox-v1.schema.json",
+  "title": "Knowt structured inbox submission",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "submission_id", "source", "nodes"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "submission_id": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["system", "created_at"],
+      "properties": {
+        "system": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "created_at": { "type": "string", "format": "date-time" },
+        "conversation_title": { "type": ["string", "null"] }
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100,
+      "items": { "$ref": "#/$defs/node" }
+    }
+  },
+  "$defs": {
+    "pathHint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path_hint", "origin"],
+      "properties": {
+        "path_hint": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "origin": { "enum": ["llm", "user"] }
+      }
+    },
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "client_node_id", "title", "knowledge_type", "content_markdown",
+        "topic", "project", "tags"
+      ],
+      "properties": {
+        "client_node_id": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "title": { "type": "string", "minLength": 1, "maxLength": 240 },
+        "knowledge_type": { "enum": ["Reference", "Practice", "Debug", "Result"] },
+        "content_markdown": { "type": "string", "minLength": 1 },
+        "topic": { "$ref": "#/$defs/pathHint" },
+        "project": { "$ref": "#/$defs/pathHint" },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": []
+        }
+      }
+    }
+  }
+}
+

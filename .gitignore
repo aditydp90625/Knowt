@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+.pytest_cache/
+pytest-cache-files-*/
+*.py[cod]
+node_modules/
+.pnpm-store/
+*.egg-info/
+frontend/dist/
+*.tsbuildinfo
+frontend/vite.config.js
+frontend/vite.config.d.ts
+data/
+tmp/
+.env
