@@ -9,6 +9,7 @@ internal static class Program
 {
     private const string KnowtRoot = @"C:\Users\aditya.deshpande\OneDrive - TTPGroup\Documents\Projects\Knowt";
     private const string KnowtUrl = "http://127.0.0.1:4318";
+    private const string DefaultMcpUrl = "http://127.0.0.1:4318/mcp";
 
     [STAThread]
     private static int Main(string[] args)
@@ -27,6 +28,8 @@ internal static class Program
                 WaitForKnowt();
             }
 
+            StartTunnelClientIfConfigured();
+
             if (!startOnly)
             {
                 Process.Start(new ProcessStartInfo(KnowtUrl) { UseShellExecute = true });
@@ -42,6 +45,102 @@ internal static class Program
                 MessageBoxIcon.Error);
             return 1;
         }
+    }
+
+    private static void StartTunnelClientIfConfigured()
+    {
+        string autoStart = Environment.GetEnvironmentVariable("KNOWT_TUNNEL_AUTOSTART");
+        if (!String.Equals(autoStart, "1", StringComparison.OrdinalIgnoreCase) &&
+            !String.Equals(autoStart, "true", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        string tunnelId = Environment.GetEnvironmentVariable("KNOWT_TUNNEL_ID");
+        if (String.IsNullOrWhiteSpace(tunnelId))
+        {
+            throw new InvalidOperationException(
+                "KNOWT_TUNNEL_AUTOSTART is enabled, but KNOWT_TUNNEL_ID is not set.");
+        }
+
+        if (String.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("CONTROL_PLANE_API_KEY")))
+        {
+            throw new InvalidOperationException(
+                "KNOWT_TUNNEL_AUTOSTART is enabled, but CONTROL_PLANE_API_KEY is not available to the launcher process.");
+        }
+
+        if (IsManagedTunnelRunning()) return;
+
+        string mcpUrl = Environment.GetEnvironmentVariable("KNOWT_MCP_SERVER_URL");
+        if (String.IsNullOrWhiteSpace(mcpUrl)) mcpUrl = DefaultMcpUrl;
+
+        ProcessStartInfo startInfo = new ProcessStartInfo
+        {
+            FileName = FindTunnelClientExecutable(),
+            Arguments = "run --control-plane.tunnel-id=" + tunnelId + " --mcp.server-url=" + mcpUrl,
+            WorkingDirectory = KnowtRoot,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            WindowStyle = ProcessWindowStyle.Hidden
+        };
+
+        Process process = Process.Start(startInfo);
+        if (process == null)
+        {
+            throw new InvalidOperationException("Windows could not launch tunnel-client.");
+        }
+
+        Directory.CreateDirectory(Path.GetDirectoryName(TunnelPidPath));
+        File.WriteAllText(TunnelPidPath, process.Id.ToString());
+        Thread.Sleep(500);
+        if (process.HasExited)
+        {
+            throw new InvalidOperationException(
+                "tunnel-client exited immediately. Run 'pnpm tunnel:doctor' in PowerShell for diagnostics.");
+        }
+    }
+
+    private static string TunnelPidPath
+    {
+        get { return Path.Combine(KnowtRoot, "tmp", "knowt-tunnel.pid"); }
+    }
+
+    private static bool IsManagedTunnelRunning()
+    {
+        try
+        {
+            if (!File.Exists(TunnelPidPath)) return false;
+            int processId;
+            if (!Int32.TryParse(File.ReadAllText(TunnelPidPath).Trim(), out processId)) return false;
+            Process process = Process.GetProcessById(processId);
+            return !process.HasExited && process.ProcessName.IndexOf("tunnel-client", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static string FindTunnelClientExecutable()
+    {
+        string configured = Environment.GetEnvironmentVariable("KNOWT_TUNNEL_CLIENT_PATH");
+        if (!String.IsNullOrWhiteSpace(configured))
+        {
+            if (File.Exists(configured)) return configured;
+            throw new FileNotFoundException(
+                "KNOWT_TUNNEL_CLIENT_PATH does not point to tunnel-client.exe.", configured);
+        }
+
+        string path = Environment.GetEnvironmentVariable("PATH") ?? String.Empty;
+        foreach (string directory in path.Split(Path.PathSeparator))
+        {
+            if (String.IsNullOrWhiteSpace(directory)) continue;
+            string candidate = Path.Combine(directory.Trim(), "tunnel-client.exe");
+            if (File.Exists(candidate)) return candidate;
+        }
+
+        throw new FileNotFoundException(
+            "tunnel-client.exe could not be found. Install it, add it to PATH, or set KNOWT_TUNNEL_CLIENT_PATH.");
     }
 
     private static void StartKnowtServer()

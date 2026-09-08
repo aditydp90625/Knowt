@@ -53,7 +53,7 @@ Set `KNOWT_DB_PATH` to override the database file and `KNOWT_PORT` to override t
 
 The external ingestion contract is [contracts/inbox-v1.schema.json](contracts/inbox-v1.schema.json). Files should be written atomically, for example by writing a temporary file and then renaming it into the inbox.
 
-For ChatGPT desktop and Codex, use the local MCP setup and ingestion prompt in [docs/chatgpt-integration.md](docs/chatgpt-integration.md). The repository includes a project-scoped MCP connection at `.codex/config.toml`. A hosted custom GPT can instead use the fallback [contracts/chatgpt-action.openapi.json](contracts/chatgpt-action.openapi.json) over a secured HTTPS deployment. Both integrations expose only current topical headings and stage all submitted packets for review.
+For ChatGPT, use the OpenAI Secure MCP Tunnel workflow in [docs/chatgpt-integration.md](docs/chatgpt-integration.md). `tunnel-client` runs beside Knowt and forwards the private `http://127.0.0.1:4318/mcp` endpoint to the selected ChatGPT developer-mode app without exposing Knowt publicly. The repository-level `.codex/config.toml` remains as a direct local fallback for Codex. Both paths expose only current topical headings and stage all submitted packets for review.
 
 ## Repository map
 

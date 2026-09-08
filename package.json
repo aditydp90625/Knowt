@@ -5,10 +5,14 @@
   "packageManager": "pnpm@11.19.0",
   "scripts": {
     "dev": "pnpm --filter @knowt/contracts build && concurrently -k -n api,web -c cyan,magenta \"pnpm --filter @knowt/server dev\" \"pnpm --filter @knowt/web dev\"",
+    "dev:tunnel": "concurrently -k -n knowt,tunnel -c cyan,yellow \"pnpm dev\" \"pnpm tunnel:run\"",
     "build": "pnpm --filter @knowt/contracts build && pnpm --filter @knowt/server build && pnpm --filter @knowt/web build",
     "test": "pnpm -r --if-present test",
     "typecheck": "pnpm -r --if-present typecheck",
-    "check": "pnpm typecheck && pnpm test && pnpm build"
+    "check": "pnpm typecheck && pnpm test && pnpm build",
+    "tunnel:help": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/KnowtTunnel.ps1 -Action quickstart",
+    "tunnel:doctor": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/KnowtTunnel.ps1 -Action doctor",
+    "tunnel:run": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/KnowtTunnel.ps1 -Action run"
   },
   "devDependencies": {
     "concurrently": "^10.0.5",
