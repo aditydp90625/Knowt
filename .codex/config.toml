@@ -1,0 +1,5 @@
+[mcp_servers.knowt]
+url = "http://127.0.0.1:4318/mcp"
+enabled = true
+required = false
+default_tools_approval_mode = "writes"

@@ -1,94 +1,69 @@
-# Knowt implementation plan
+# Knowt V1 architecture
 
-The planning specification is the product source of truth. This document records technical decisions, the currently implemented slice, and the sequence for completing V1 without broadening the product.
+## Guiding decisions
 
-## Architecture decisions
+Knowt is a local-first modular monolith. The browser owns interaction state; Fastify owns validation and use-case orchestration; repositories own persistence. SQLite is the canonical source of truth. This keeps the MVP straightforward to run while preserving explicit seams for later background jobs, richer importers and local AI.
 
-| Concern | Decision | Reason |
+The implementation deliberately uses established libraries for non-domain work:
+
+| Concern | Library | Role |
 | --- | --- | --- |
-| Canonical persistence | SQLite through Python's built-in driver | Local, inspectable, portable, and keeps the initial data layer explicit |
-| API | FastAPI with Pydantic boundary models | Versioned validation and a typed OpenAPI surface |
-| Keyword retrieval | SQLite FTS5 | Offline, fast, and independent of Ollama |
-| Frontend | React + TypeScript + Vite | Matches the recommended stack and supports a componentized spatial UI |
-| Spatial tree | Deterministic SVG hierarchy layout | Downward-only, settles immediately, and remains stable between sessions |
-| Rich content | Canonical Markdown with a formatting-assisted editor | Explicit save boundaries and portable content; a full WYSIWYG layer remains a later V1 increment |
-| AI | Optional service boundary, not a database dependency | AI failures cannot block canonical editing, tree navigation, or keyword search |
-| External ingestion | Pydantic validation plus a published JSON Schema | Invalid submissions cannot modify canonical records |
+| Web application | React, Vite | UI composition and development/build tooling |
+| UI and UX primitives | Mantine, Tabler Icons, Radix Context Menu | Accessible controls, overlays, feedback and contextual actions |
+| Server state | TanStack Query | Fetching, caching and mutation invalidation |
+| Spatial graph | React Flow, Dagre | Canvas interaction and downward tree layout |
+| Markdown editing | Milkdown Crepe | Visual Markdown editing without a custom editor stack |
+| Markdown rendering | react-markdown, remark-gfm, remark-math, rehype-katex | Safe preview with tables, task lists and maths |
+| HTTP API | Fastify | Typed, low-overhead local API and static web serving |
+| Persistence | Drizzle ORM, Node SQLite | Schema-aware repository access without a native addon build chain |
+| Runtime contracts | Zod, JSON Schema | Internal API validation and external ingestion validation |
+| Files and archives | Chokidar, JSZip | Stable-file inbox watching and portable exports |
 
-## Implemented foundation
+## Module boundaries
 
-- [x] Canonical node with exactly one Topic, Project, and Knowledge Type
-- [x] Seeded initial Topic taxonomy, Tools children, Miscellaneous, and General
-- [x] Reusable case-normalized tags
-- [x] Explicit create/save with immutable revision snapshots
-- [x] Revision restore API that creates a new revision
-- [x] Soft-delete Trash and recovery
-- [x] Global FTS5 title/content/tag search and highlighted excerpts
-- [x] Structured inbox schema `1.0`, idempotent submission IDs, and staging
-- [x] Review Queue approve/reject flow
-- [x] Downward-growing Topic and Project SVG workspaces
-- [x] Separate root selector and explicit expand/collapse control
-- [x] Persisted pan viewport and expanded branches per workspace root
-- [x] Clean reading inspector and explicit Edit mode
-- [x] Core API and layout tests
+```text
+React views and graph interaction
+            |
+       typed API client
+            |
+ Fastify routes / validation
+            |
+ repositories + application services
+            |
+ SQLite, attachments and inbox folders
+```
 
-## Next V1 increments
+- `packages/contracts` contains domain DTOs and Zod schemas shared by both applications. It has no server or UI dependencies.
+- `apps/server/src/repositories` contains the rules that must remain true regardless of interface: one topic/project assignment, cycle prevention, sibling-name uniqueness, protected fallbacks, optimistic versions, revisions and soft deletion.
+- `apps/server/src/services` contains workflows spanning persistence and files: structured inbox watching and validated export/import.
+- `apps/web/src/components` contains editor and page-level workflows. `apps/web/src/tree` contains layout projection and canvas interaction, independent of HTTP details.
+- `apps/web/src/api/client.ts` is the UI's sole HTTP boundary.
 
-### 1. Finish structural editing
+## Canonical model
 
-- Category rename, precise move picker, drag reparent, and circular-move feedback
-- Multi-select and Create Parent
-- Category deletion preview UI wired to the existing preview endpoint
-- Short-lived undo records for structural operations
-- Search-result focus that expands, centers, and highlights the ancestor path
+A Knowledge Node is stored once and references one Topic category, one Project category and one Knowledge Type. Tags are many-to-many. Attachments are immutable, content-addressed files with database metadata. Explicit create/update/restore operations write immutable revision snapshots. Tree layout state is keyed by workspace and visible root so each view can preserve its own viewport, expansion set and manual positions.
 
-Acceptance: every structural mutation has a preview where destructive, persists after restart, and never produces cycles or orphaned nodes.
+Categories are adjacency-list trees. Repository checks prevent cross-workspace parents and cycles. Deleting a category first computes a redistribution preview; children and direct Knowledge Nodes move to the parent, or to the protected `Miscellaneous`/`General` fallback for root deletion.
 
-### 2. Complete the editor and files
+SQLite FTS5 indexes title, Markdown content and tags. Search results include both category paths, letting the web client switch workspace, select the correct visible root and expand the route to the result.
 
-- Replace the formatting-assisted textarea with a visual Markdown-backed editor
-- Inline image paste/drop/picker
-- Attachment storage outside SQLite under the Knowledge Base data directory
-- Attachment metadata, safe filenames, orphan cleanup, and export portability tests
-- Revision inspector and side-by-side comparison
+## Structured ingestion
 
-Acceptance: common formatting needs no Markdown entry, all files are copied locally, and restoring a revision never loses attachment history.
+The versioned external contract remains separate from internal DTOs. A submission is validated, recorded idempotently, reconciled against existing path hints and staged as one or more proposals. Nothing becomes canonical until approval. Files watched in the inbox are processed only after their size and modification time stabilise, then moved to `processed` or `quarantine`.
 
-### 3. Complete ingestion operations
+This is also the future AI integration seam: an Ollama adapter can produce the same external proposal contract over HTTP. It should not receive direct database write access.
 
-- Watched inbox directory with stable-write detection
-- Quarantine directory and human-readable validation reports
-- Editable proposal fields and approve-all-clean
-- 30-day rejected-proposal expiration
-- Duplicate-resolution UI states: separate, update, merge, already captured
+## Portability and failure handling
 
-Acceptance: malformed or partially written input cannot change canonical data, and every accepted external change passes through review.
+Export produces a ZIP containing a checkpointed SQLite snapshot, settings, attachments and a versioned manifest. Import expands to staging, rejects unsafe paths or incompatible/malformed archives, validates the database, and only then swaps state. The previous database and attachments are retained as timestamped backups.
 
-### 4. Portability and settings
+Mutations return domain errors rather than silently repairing ambiguous input. Node moves use an expected version to prevent stale edits. UI mutations invalidate canonical queries and move actions expose a short-lived undo path.
 
-- Settings persistence and Knowledge Type template editing
-- Validated ZIP export manifest containing SQLite, attachments, configuration, and derived embedding metadata
-- Transactional replace-import with backup and complete preflight validation
-- Theme selection and configurable data/inbox locations
+## Intended next extensions
 
-Acceptance: an export imports on a clean machine with identical canonical node, revision, tag, taxonomy, and attachment data.
+1. Add focused end-to-end browser tests for the highest-risk interaction paths.
+2. Add optional Ollama proposal generation behind a server-side interface, writing only to the Review Queue.
+3. Add richer import adapters that translate source formats into the same versioned ingestion contract.
+4. Add graph virtualisation or root-level lazy loading only when real data demonstrates the need.
 
-### 5. Optional local AI
-
-- Ollama health/model settings and connection test
-- Pluggable embedding provider and rebuild job
-- Hybrid exact/keyword/semantic ranking
-- Semantic duplicate candidates and merge proposal generation
-- Taxonomy reconciliation using retrieved approved examples
-
-Acceptance: disabling or stopping Ollama changes only AI-enhanced behavior; all non-AI acceptance tests still pass unchanged.
-
-## Data safety invariants
-
-1. Proposals and derived AI data never become canonical without an explicit commit action.
-2. Canonical node writes and their revision snapshots share one database transaction.
-3. Delete is soft by default; permanent deletion is a separate, explicit operation.
-4. Miscellaneous and General are protected fallbacks.
-5. Imports validate completely before the active Knowledge Base is replaced.
-6. Cloud-originated integrations have a write-only submission contract and no canonical read credentials.
-
+These are extensions, not prerequisites for the non-AI V1 data model.

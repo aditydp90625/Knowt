@@ -1,82 +1,68 @@
 # Knowt
 
-Knowt is a local-first engineering knowledge system. It stores every knowledge node once while presenting it through two independent hierarchies: **Topic** (what it is about) and **Project** (where it was first learned).
+Knowt is a local-first engineering knowledge system built around one canonical Knowledge Node and two independent ways to organise it: topical knowledge and project context. This repository contains the non-AI V1 MVP described in the planning specification.
 
-This repository currently implements the first end-to-end foundation:
+## What is included
 
-- SQLite canonical storage with seeded Topic roots and the protected General project
-- manual node creation and explicit-save editing
-- immutable revision history and revision restore
-- normalized reusable tags
-- global SQLite FTS5 search with highlighted excerpts
-- soft-delete Trash and restore
-- versioned structured inbox ingestion and a review/approval queue
-- React/TypeScript spatial Topic and Project workspaces with persistent expansion and viewport state
-- an optional AI service boundary; core behavior never depends on Ollama
+- A spatial, downward knowledge tree with pan, zoom, semantic detail levels, persisted expansion/viewport state, drag-to-reparent, right-click actions and multi-select `Create Parent`.
+- Separate Topical and Project workspaces. Every Knowledge Node has exactly one path in each workspace and one Knowledge Type.
+- A Milkdown Crepe visual Markdown editor with tabs, split view, tags, source metadata, images/attachments and immutable revisions on every explicit save.
+- Full-text keyword search with paths back into either tree.
+- Structured JSON ingestion through MCP, REST and a watched inbox, with schema validation, idempotent submission IDs, quarantine and an explicit Review Queue.
+- Recoverable Trash, protected fallback categories and a redistribution preview before category deletion.
+- Versioned ZIP export/import of the SQLite database, settings and attachments, with validation and a retained backup before replacement.
+- No AI runtime or Ollama dependency. The later AI boundary can be added behind the application services without changing the canonical data model.
 
 ## Run locally
 
-Requirements: Python 3.12+, Node.js 20+, and pnpm.
+Prerequisites: Node.js 24 or newer and pnpm 11.
 
 ```powershell
-python -m venv .venv
-.venv\Scripts\python -m pip install -e ".[dev]"
-pnpm --dir frontend install
+pnpm install --frozen-lockfile
+pnpm dev
 ```
 
-Start the API:
+Open `http://127.0.0.1:5173`. Vite proxies `/api` to the Fastify server on `http://127.0.0.1:4318`.
+
+For a production-style run:
 
 ```powershell
-.venv\Scripts\python -m uvicorn backend.app.main:app --reload --port 8000
+pnpm build
+pnpm --filter @knowt/server start
 ```
 
-Start the frontend in another terminal:
+Then open `http://127.0.0.1:4318`.
+
+Run the complete verification suite with:
 
 ```powershell
-pnpm --dir frontend dev
+pnpm check
 ```
 
-Open `http://localhost:5173`. By default the database lives at `data/knowt.sqlite3`. Override it with `KNOWT_DB_PATH`.
+## Local data
 
-## Verify
+By default, runtime data is stored below `data/` and is ignored by Git:
 
-```powershell
-.venv\Scripts\python -m pytest
-pnpm --dir frontend test
-pnpm --dir frontend build
+- `data/knowt.sqlite` — canonical SQLite database
+- `data/attachments/` — content-addressed attachment files
+- `data/inbox/` — watched JSON submissions
+- `data/processed/` — accepted inbox files
+- `data/quarantine/` — invalid inbox files plus error reports
+
+Set `KNOWT_DB_PATH` to override the database file and `KNOWT_PORT` to override the server port. The inbox folder can be changed from Settings.
+
+The external ingestion contract is [contracts/inbox-v1.schema.json](contracts/inbox-v1.schema.json). Files should be written atomically, for example by writing a temporary file and then renaming it into the inbox.
+
+For ChatGPT desktop and Codex, use the local MCP setup and ingestion prompt in [docs/chatgpt-integration.md](docs/chatgpt-integration.md). The repository includes a project-scoped MCP connection at `.codex/config.toml`. A hosted custom GPT can instead use the fallback [contracts/chatgpt-action.openapi.json](contracts/chatgpt-action.openapi.json) over a secured HTTPS deployment. Both integrations expose only current topical headings and stage all submitted packets for review.
+
+## Repository map
+
+```text
+apps/web/             React application and interaction layer
+apps/server/          Fastify API, application services and persistence
+packages/contracts/   Shared Zod schemas and TypeScript domain contracts
+contracts/            Versioned external JSON contracts
+docs/                 Architecture and implementation notes
 ```
 
-## Structured inbox contract
-
-Submit JSON to `POST /api/inbox/submissions` using schema version `1.0`. Submissions are staged only; they cannot modify canonical nodes until a proposal is explicitly approved.
-The machine-readable contract lives at [`contracts/inbox-v1.schema.json`](contracts/inbox-v1.schema.json). The phased technical roadmap is in [`docs/implementation-plan.md`](docs/implementation-plan.md).
-
-```json
-{
-  "schema_version": "1.0",
-  "submission_id": "7e026e5a-d293-4b40-9f93-384e42eb29b8",
-  "source": {
-    "system": "ChatGPT",
-    "created_at": "2026-09-07T12:00:00Z",
-    "conversation_title": "AXI DMA debugging"
-  },
-  "nodes": [
-    {
-      "client_node_id": "node-1",
-      "title": "AXI DMA scatter/gather descriptor alignment",
-      "knowledge_type": "Debug",
-      "content_markdown": "Descriptor rings must follow the alignment required by the configured data width.",
-      "topic": {"path_hint": ["Digital Design", "FPGA", "AXI"], "origin": "llm"},
-      "project": {"path_hint": ["General"], "origin": "user"},
-      "tags": ["AXI", "DMA"]
-    }
-  ]
-}
-```
-
-## Design boundaries
-
-- The browser talks only to the local API.
-- External/cloud LLM integrations are write-only inbox producers; there is no read API intended for them.
-- AI-generated or external changes remain proposals until reviewed.
-- Embeddings and future Ollama features are derived/optional and must never block editing or keyword search.
+See [docs/implementation-plan.md](docs/implementation-plan.md) for the architectural boundaries and extension points.

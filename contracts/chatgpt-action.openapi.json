@@ -1,0 +1,146 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Knowt Inbox Action",
+    "version": "1.0.0",
+    "description": "Read the current topical category headings and stage structured knowledge proposals in Knowt."
+  },
+  "servers": [
+    {
+      "url": "https://YOUR_KNOWT_HOST",
+      "description": "Replace with the HTTPS address that exposes your Knowt integration routes"
+    }
+  ],
+  "paths": {
+    "/api/inbox/topical-headers": {
+      "get": {
+        "operationId": "getTopicalHeaders",
+        "summary": "Get current topical headings",
+        "description": "Call once at the beginning of each new conversation. Returns category names and hierarchy only; it never returns Knowledge Nodes or their contents.",
+        "responses": {
+          "200": {
+            "description": "Current topical hierarchy",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TopicalHeaders" }
+              }
+            }
+          }
+        },
+        "security": [{ "KnowtApiKey": [] }]
+      }
+    },
+    "/api/inbox/submissions": {
+      "post": {
+        "operationId": "submitKnowledgePackets",
+        "summary": "Stage knowledge packets for review",
+        "description": "Submit one or more structured packets to the Knowt Review Queue. A successful call stages proposals; it does not make them canonical until the user approves them in Knowt.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Submission" }
+            }
+          }
+        },
+        "responses": {
+          "202": { "description": "Submission accepted into the Review Queue" },
+          "409": { "description": "The submission_id was already used with different content" },
+          "422": { "description": "The submission did not match the contract" }
+        },
+        "security": [{ "KnowtApiKey": [] }]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "KnowtApiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Knowt-Api-Key"
+      }
+    },
+    "schemas": {
+      "TopicHeader": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "children"],
+      "properties": {
+        "name": { "type": "string" },
+        "children": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/TopicHeader" }
+        }
+      }
+    },
+    "TopicalHeaders": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "topics"],
+      "properties": {
+        "schema_version": { "const": "1.0" },
+        "topics": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/TopicHeader" }
+        }
+      }
+    },
+    "PathHint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path_hint", "origin"],
+      "properties": {
+        "path_hint": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1, "maxLength": 120 }
+        },
+        "origin": { "type": "string", "enum": ["llm", "user"] }
+      }
+    },
+    "Packet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["client_node_id", "title", "knowledge_type", "content_markdown", "topic", "project", "tags"],
+      "properties": {
+        "client_node_id": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "title": { "type": "string", "minLength": 1, "maxLength": 240 },
+        "knowledge_type": { "type": "string", "enum": ["Reference", "Practice", "Debug", "Result"] },
+        "content_markdown": { "type": "string", "minLength": 1 },
+        "topic": { "$ref": "#/components/schemas/PathHint" },
+        "project": { "$ref": "#/components/schemas/PathHint" },
+        "tags": {
+          "type": "array",
+          "maxItems": 30,
+          "items": { "type": "string", "minLength": 1, "maxLength": 80 }
+        }
+      }
+    },
+    "Submission": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "submission_id", "source", "nodes"],
+      "properties": {
+        "schema_version": { "const": "1.0" },
+        "submission_id": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["system", "created_at"],
+          "properties": {
+            "system": { "type": "string", "minLength": 1, "maxLength": 120 },
+            "created_at": { "type": "string", "format": "date-time" },
+            "conversation_title": { "type": "string", "maxLength": 240 }
+          }
+        },
+        "nodes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "items": { "$ref": "#/components/schemas/Packet" }
+        }
+      }
+      }
+    }
+  }
+}

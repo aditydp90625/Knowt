@@ -1,0 +1,17 @@
+{
+  "name": "knowt",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.19.0",
+  "scripts": {
+    "dev": "pnpm --filter @knowt/contracts build && concurrently -k -n api,web -c cyan,magenta \"pnpm --filter @knowt/server dev\" \"pnpm --filter @knowt/web dev\"",
+    "build": "pnpm --filter @knowt/contracts build && pnpm --filter @knowt/server build && pnpm --filter @knowt/web build",
+    "test": "pnpm -r --if-present test",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "check": "pnpm typecheck && pnpm test && pnpm build"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.5",
+    "typescript": "^7.0.2"
+  }
+}

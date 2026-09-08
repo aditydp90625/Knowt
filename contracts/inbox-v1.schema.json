@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://knowt.local/contracts/inbox-v1.schema.json",
-  "title": "Knowt structured inbox submission",
+  "$id": "https://knowt.local/schemas/inbox-v1.schema.json",
+  "title": "Knowt structured knowledge submission",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "submission_id", "source", "nodes"],
@@ -15,51 +15,38 @@
       "properties": {
         "system": { "type": "string", "minLength": 1, "maxLength": 120 },
         "created_at": { "type": "string", "format": "date-time" },
-        "conversation_title": { "type": ["string", "null"] }
+        "conversation_title": { "type": "string", "maxLength": 240 }
       }
     },
     "nodes": {
       "type": "array",
       "minItems": 1,
       "maxItems": 100,
-      "items": { "$ref": "#/$defs/node" }
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["client_node_id", "title", "knowledge_type", "content_markdown", "topic", "project"],
+        "properties": {
+          "client_node_id": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "title": { "type": "string", "minLength": 1, "maxLength": 240 },
+          "knowledge_type": { "enum": ["Reference", "Practice", "Debug", "Result"] },
+          "content_markdown": { "type": "string", "minLength": 1 },
+          "topic": { "$ref": "#/$defs/path_hint" },
+          "project": { "$ref": "#/$defs/path_hint" },
+          "tags": { "type": "array", "maxItems": 30, "items": { "type": "string", "minLength": 1, "maxLength": 80 } }
+        }
+      }
     }
   },
   "$defs": {
-    "pathHint": {
+    "path_hint": {
       "type": "object",
       "additionalProperties": false,
       "required": ["path_hint", "origin"],
       "properties": {
-        "path_hint": {
-          "type": "array",
-          "minItems": 1,
-          "items": { "type": "string", "minLength": 1 }
-        },
+        "path_hint": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1, "maxLength": 120 } },
         "origin": { "enum": ["llm", "user"] }
-      }
-    },
-    "node": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "client_node_id", "title", "knowledge_type", "content_markdown",
-        "topic", "project", "tags"
-      ],
-      "properties": {
-        "client_node_id": { "type": "string", "minLength": 1, "maxLength": 120 },
-        "title": { "type": "string", "minLength": 1, "maxLength": 240 },
-        "knowledge_type": { "enum": ["Reference", "Practice", "Debug", "Result"] },
-        "content_markdown": { "type": "string", "minLength": 1 },
-        "topic": { "$ref": "#/$defs/pathHint" },
-        "project": { "$ref": "#/$defs/pathHint" },
-        "tags": {
-          "type": "array",
-          "items": { "type": "string" },
-          "default": []
-        }
       }
     }
   }
 }
-
