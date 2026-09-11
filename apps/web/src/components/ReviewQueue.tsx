@@ -33,7 +33,8 @@ export function ReviewQueue({ categories, knowledgeTypes }: Props) {
     await Promise.all([client.invalidateQueries({ queryKey: ["proposals"] }), client.invalidateQueries({ queryKey: ["taxonomy"] })]);
   };
   const approveAll = useMutation({
-    mutationFn: api.approveSubmission,
+    mutationFn: ({ submissionId, proposalId, node }: { submissionId: string; proposalId: string; node: NodeWrite }) =>
+      api.approveSubmission(submissionId, { [proposalId]: node }),
     onSuccess: async () => { await refresh(); notifications.show({ color: "teal", message: "All clean proposals approved" }); },
   });
   const submissionCounts = useMemo(() => {
@@ -51,13 +52,13 @@ export function ReviewQueue({ categories, knowledgeTypes }: Props) {
         </ScrollArea>
       </aside>
       <main className="review-detail">
-        {selected ? <ProposalEditor key={selected.id} proposal={selected} categories={categories} knowledgeTypes={knowledgeTypes} onFinished={refresh} onApproveAll={() => approveAll.mutate(selected.submissionId)} siblingCount={submissionCounts.get(selected.submissionId) ?? 1} /> : <Stack h="100%" justify="center" align="center"><Text c="dimmed">Select a proposal to review.</Text></Stack>}
+        {selected ? <ProposalEditor key={selected.id} proposal={selected} categories={categories} knowledgeTypes={knowledgeTypes} onFinished={refresh} onApproveAll={(node) => approveAll.mutate({ submissionId: selected.submissionId, proposalId: selected.id, node })} approveAllPending={approveAll.isPending} siblingCount={submissionCounts.get(selected.submissionId) ?? 1} /> : <Stack h="100%" justify="center" align="center"><Text c="dimmed">Select a proposal to review.</Text></Stack>}
       </main>
     </div>
   );
 }
 
-function ProposalEditor({ proposal, categories, knowledgeTypes, onFinished, onApproveAll, siblingCount }: Props & { proposal: Proposal; onFinished(): Promise<void>; onApproveAll(): void; siblingCount: number }) {
+function ProposalEditor({ proposal, categories, knowledgeTypes, onFinished, onApproveAll, approveAllPending, siblingCount }: Props & { proposal: Proposal; onFinished(): Promise<void>; onApproveAll(node: NodeWrite): void; approveAllPending: boolean; siblingCount: number }) {
   const type = knowledgeTypes.find((item) => item.name === proposal.payload.knowledgeType);
   const [form, setForm] = useState<NodeWrite>({
     title: proposal.payload.title,
@@ -76,7 +77,7 @@ function ProposalEditor({ proposal, categories, knowledgeTypes, onFinished, onAp
   const reject = useMutation({ mutationFn: () => api.rejectProposal(proposal.id), onSuccess: onFinished });
   return (
     <Stack p="lg" gap="md" className="proposal-editor">
-      <Group justify="space-between"><Box><Text size="xs" tt="uppercase" c="dimmed" fw={700}>From {proposal.source.system}</Text><Text size="sm">{proposal.source.conversationTitle}</Text></Box><Group><Button variant="light" leftSection={<IconChecks size={16} />} onClick={onApproveAll}>Approve all {siblingCount}</Button><Button color="red" variant="subtle" leftSection={<IconX size={16} />} onClick={() => reject.mutate()}>Reject</Button><Button leftSection={<IconCheck size={16} />} loading={approve.isPending} onClick={() => approve.mutate()}>Approve</Button></Group></Group>
+      <Group justify="space-between"><Box><Text size="xs" tt="uppercase" c="dimmed" fw={700}>From {proposal.source.system}</Text><Text size="sm">{proposal.source.conversationTitle}</Text></Box><Group>{siblingCount > 1 && <Button variant="light" leftSection={<IconChecks size={16} />} loading={approveAllPending} onClick={() => onApproveAll(form)}>Approve all {siblingCount}</Button>}<Button color="red" variant="subtle" leftSection={<IconX size={16} />} onClick={() => reject.mutate()}>Reject</Button><Button leftSection={<IconCheck size={16} />} loading={approve.isPending} onClick={() => approve.mutate()}>Approve</Button></Group></Group>
       <Paper withBorder p="md"><Stack>
         <TextInput label="Title" required value={form.title} onChange={(event) => setForm({ ...form, title: event.currentTarget.value })} />
         <Group grow align="start">

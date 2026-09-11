@@ -113,6 +113,58 @@ describe("Knowt API", () => {
     expect((await app.inject({ method: "GET", url: "/api/search?q=synchronizer" })).json()).toHaveLength(1);
   });
 
+  it("uses Review Queue edits when approving an entire submission", async () => {
+    const { digital, general, debug } = await fixtures();
+    await app.inject({ method: "POST", url: "/api/inbox/submissions", payload: {
+      schema_version: "1.0",
+      submission_id: "edited-batch",
+      source: { system: "ChatGPT", created_at: "2026-09-07T12:00:00Z" },
+      nodes: [{
+        client_node_id: "edited-node",
+        title: "Original proposal title",
+        knowledge_type: "Reference",
+        content_markdown: "Original content.",
+        topic: { path_hint: ["Digital Design"], origin: "llm" },
+        project: { path_hint: ["General"], origin: "llm" },
+        tags: [],
+      }, {
+        client_node_id: "unchanged-node",
+        title: "Unchanged proposal",
+        knowledge_type: "Reference",
+        content_markdown: "Unchanged content.",
+        topic: { path_hint: ["Digital Design"], origin: "llm" },
+        project: { path_hint: ["General"], origin: "llm" },
+        tags: [],
+      }],
+    } });
+    const pending = (await app.inject({ method: "GET", url: "/api/proposals?status=pending" })).json();
+    const edited = pending.find((item: { clientNodeId: string }) => item.clientNodeId === "edited-node");
+    const response = await app.inject({ method: "POST", url: `/api/submissions/${edited.submissionId}/approve-all`, payload: {
+      nodes: {
+        [edited.id]: {
+          title: "Edited proposal title",
+          contentMarkdown: "Edited content retained on approval.",
+          knowledgeTypeId: debug.id,
+          topicCategoryId: digital.id,
+          projectCategoryId: general.id,
+          tags: ["reviewed"],
+          sourceType: "ChatGPT conversation",
+          sourceDetails: "Edited during review",
+        },
+      },
+    } });
+    expect(response.statusCode, response.body).toBe(200);
+    const approved = response.json().find((item: { clientNodeId: string }) => item.clientNodeId === "edited-node");
+    const node = (await app.inject({ method: "GET", url: `/api/nodes/${approved.canonicalNodeId}` })).json();
+    expect(node).toMatchObject({
+      title: "Edited proposal title",
+      contentMarkdown: "Edited content retained on approval.",
+      knowledgeType: "Debug",
+      tags: ["reviewed"],
+      sourceDetails: "Edited during review",
+    });
+  });
+
   it("returns only the current topical header hierarchy to integrations", async () => {
     const response = await app.inject({ method: "GET", url: "/api/inbox/topical-headers" });
     expect(response.statusCode).toBe(200);

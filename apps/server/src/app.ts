@@ -8,6 +8,7 @@ import {
   layoutStateSchema,
   nodeMoveSchema,
   nodeWriteSchema,
+  proposalBatchDecisionSchema,
   proposalDecisionSchema,
   workspaceSchema,
 } from "@knowt/contracts";
@@ -263,7 +264,10 @@ export async function buildApp(options: AppOptions = {}): Promise<FastifyInstanc
     return proposalRepository.approve(id, proposalDecisionSchema.parse(request.body ?? {}).node);
   });
   app.post("/api/proposals/:id/reject", async (request) => proposalRepository.reject(idParams.parse(request.params).id));
-  app.post("/api/submissions/:id/approve-all", async (request) => proposalRepository.approveAll(idParams.parse(request.params).id));
+  app.post("/api/submissions/:id/approve-all", async (request) => {
+    const { id } = idParams.parse(request.params);
+    return proposalRepository.approveAll(id, proposalBatchDecisionSchema.parse(request.body ?? {}).nodes);
+  });
 
   app.get("/api/settings", async () => settingsRepository.get());
   app.put("/api/settings", async (request) => {

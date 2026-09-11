@@ -72,7 +72,9 @@ export const api = {
   deleteAttachment: (id: string) => request<void>(`/attachments/${id}`, { method: "DELETE" }),
   proposals: (status: Proposal["status"] = "pending") => request<Proposal[]>(`/proposals?status=${status}`),
   approveProposal: (id: string, node?: NodeWrite) => request<Proposal>(`/proposals/${id}/approve`, { method: "POST", body: JSON.stringify(node ? { node } : {}) }),
-  approveSubmission: (id: string) => request<Proposal[]>(`/submissions/${id}/approve-all`, { method: "POST" }),
+  approveSubmission: (id: string, nodes: Record<string, NodeWrite> = {}) => request<Proposal[]>(`/submissions/${id}/approve-all`, {
+    method: "POST", body: JSON.stringify({ nodes }),
+  }),
   rejectProposal: (id: string) => request<Proposal>(`/proposals/${id}/reject`, { method: "POST" }),
   settings: () => request<AppSettings>("/settings"),
   saveSettings: (settings: AppSettings) => request<AppSettings>("/settings", { method: "PUT", body: JSON.stringify(settings) }),

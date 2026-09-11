@@ -194,6 +194,10 @@ export const proposalDecisionSchema = z.object({
   node: nodeWriteSchema.omit({ expectedVersion: true }).optional(),
 });
 
+export const proposalBatchDecisionSchema = z.object({
+  nodes: z.record(z.string().uuid(), nodeWriteSchema.omit({ expectedVersion: true })).default({}),
+});
+
 export interface Proposal {
   id: string;
   submissionId: string;

@@ -79,11 +79,11 @@ export class ProposalRepository {
     return this.hydrate(this.getRow(id));
   }
 
-  approveAll(submissionId: string): Proposal[] {
+  approveAll(submissionId: string, overrides: Record<string, Omit<NodeWrite, "expectedVersion">> = {}): Proposal[] {
     const pending = this.context.orm.select().from(proposals).where(and(
       eq(proposals.submissionId, submissionId), eq(proposals.status, "pending"),
     )).all();
-    return pending.map((item) => this.approve(item.id));
+    return pending.map((item) => this.approve(item.id, overrides[item.id]));
   }
 
   reject(id: string): Proposal {
