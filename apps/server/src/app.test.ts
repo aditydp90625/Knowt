@@ -276,4 +276,16 @@ describe("Knowt API", () => {
     expect(response.headers["content-type"]).toContain("application/zip");
     expect(response.rawPayload.byteLength).toBeGreaterThan(500);
   });
+
+  it("provides and persists configurable keyboard shortcuts", async () => {
+    const original = (await app.inject({ method: "GET", url: "/api/settings" })).json();
+    expect(original.hotkeys).toMatchObject({ search: "Mod+K", deleteSelected: "Delete" });
+    const updated = await app.inject({ method: "PUT", url: "/api/settings", payload: {
+      ...original,
+      hotkeys: { ...original.hotkeys, search: "Mod+F" },
+    } });
+    expect(updated.statusCode, updated.body).toBe(200);
+    expect(updated.json().hotkeys.search).toBe("Mod+F");
+    expect((await app.inject({ method: "GET", url: "/api/settings" })).json().hotkeys.search).toBe("Mod+F");
+  });
 });

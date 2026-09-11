@@ -21,6 +21,7 @@
     "@milkdown/react": "^7.22.1",
     "@radix-ui/react-context-menu": "^2.3.7",
     "@tabler/icons-react": "^3.46.0",
+    "@tanstack/react-hotkeys": "^0.10.0",
     "@tanstack/react-query": "^5.102.8",
     "@xyflow/react": "^12.11.6",
     "katex": "^0.18.6",

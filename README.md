@@ -4,11 +4,12 @@ Knowt is a local-first engineering knowledge system built around one canonical K
 
 ## What is included
 
-- A spatial, downward knowledge tree with pan, zoom, semantic detail levels, persisted expansion/viewport state, drag-to-reparent, right-click actions and multi-select `Create Parent`.
+- A spatial, downward knowledge tree with pan, zoom, semantic detail levels, staged expand/collapse controls, persisted expansion/viewport state, drag-to-reparent, right-click actions and multi-select `Create Parent`.
 - Separate Topical and Project workspaces. Every Knowledge Node has exactly one path in each workspace and one Knowledge Type.
 - A Milkdown Crepe visual Markdown editor with tabs, split view, tags, source metadata, images/attachments and immutable revisions on every explicit save.
 - Full-text keyword search with paths back into either tree.
-- Structured JSON ingestion through MCP, REST and a watched inbox, with schema validation, idempotent submission IDs, quarantine and an explicit Review Queue.
+- Structured JSON ingestion through MCP, REST and a watched inbox, with optional raster image attachments, schema validation, idempotent submission IDs, quarantine and an explicit Review Queue.
+- Configurable keyboard shortcuts powered by TanStack Hotkeys, including search, creation, selection actions, tree expansion and workspace navigation.
 - Recoverable Trash, protected fallback categories and a redistribution preview before category deletion.
 - Versioned ZIP export/import of the SQLite database, settings and attachments, with validation and a retained backup before replacement.
 - No AI runtime or Ollama dependency. The later AI boundary can be added behind the application services without changing the canonical data model.

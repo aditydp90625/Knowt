@@ -261,4 +261,32 @@ export interface AppSettings {
   theme: "light" | "dark" | "system";
   inboxPath: string;
   rejectedRetentionDays: number;
+  hotkeys: Record<HotkeyAction, string>;
 }
+
+export const hotkeyActionSchema = z.enum([
+  "search",
+  "newKnowledge",
+  "openSelected",
+  "deleteSelected",
+  "expandAll",
+  "collapseAll",
+  "topicalWorkspace",
+  "projectWorkspace",
+  "reviewQueue",
+  "settings",
+]);
+export type HotkeyAction = z.infer<typeof hotkeyActionSchema>;
+
+export const defaultHotkeys: Record<HotkeyAction, string> = {
+  search: "Mod+K",
+  newKnowledge: "Mod+N",
+  openSelected: "Enter",
+  deleteSelected: "Delete",
+  expandAll: "Mod+Shift+E",
+  collapseAll: "Mod+Shift+C",
+  topicalWorkspace: "Mod+1",
+  projectWorkspace: "Mod+2",
+  reviewQueue: "Mod+Shift+R",
+  settings: "Mod+Shift+S",
+};

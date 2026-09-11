@@ -1,4 +1,4 @@
-import { useDeferredValue, useState } from "react";
+import { useDeferredValue, useState, type RefObject } from "react";
 import type { CategorySearchResult, NodeSearchResult, Workspace } from "@knowt/contracts";
 import { ActionIcon, Badge, Box, Group, Loader, Paper, ScrollArea, Text, TextInput } from "@mantine/core";
 import { IconArrowRight, IconFileText, IconFolder, IconSearch, IconX } from "@tabler/icons-react";
@@ -10,9 +10,10 @@ interface Props {
   onRevealNode(node: NodeSearchResult, workspace: Workspace): void;
   onOpenNode(node: NodeSearchResult): void;
   onRevealCategory(category: CategorySearchResult): void;
+  inputRef?: RefObject<HTMLInputElement | null>;
 }
 
-export function SearchBox({ onRevealNode, onOpenNode, onRevealCategory }: Props) {
+export function SearchBox({ onRevealNode, onOpenNode, onRevealCategory, inputRef }: Props) {
   const [value, setValue] = useState("");
   const deferred = useDeferredValue(value.trim());
   const result = useQuery({
@@ -23,6 +24,7 @@ export function SearchBox({ onRevealNode, onOpenNode, onRevealCategory }: Props)
   return (
     <Box className="search-box">
       <TextInput
+        ref={inputRef}
         value={value}
         onChange={(event) => setValue(event.currentTarget.value)}
         placeholder="Search nodes and categories..."

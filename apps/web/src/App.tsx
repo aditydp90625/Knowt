@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import type { Category, CategorySearchResult, KnowledgeNode, LayoutState, NodeSearchResult, Workspace } from "@knowt/contracts";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { defaultHotkeys, type Category, type CategorySearchResult, type KnowledgeNode, type LayoutState, type NodeSearchResult, type Workspace } from "@knowt/contracts";
 import {
   ActionIcon,
   AppShell,
@@ -40,6 +40,7 @@ import {
   IconX,
 } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useHotkeys, type Hotkey } from "@tanstack/react-hotkeys";
 import { api } from "./api/client";
 import { KnowledgePanel } from "./components/KnowledgePanel";
 import { ReviewQueue } from "./components/ReviewQueue";
@@ -63,6 +64,7 @@ export function App() {
   const client = useQueryClient();
   const { setColorScheme } = useMantineColorScheme();
   const [section, setSection] = useState<Section>("knowledge");
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [workspace, setWorkspace] = useState<Workspace>("topic");
   const topicQuery = useQuery({ queryKey: ["taxonomy", "topic"], queryFn: () => api.taxonomy("topic") });
   const projectQuery = useQuery({ queryKey: ["taxonomy", "project"], queryFn: () => api.taxonomy("project") });
@@ -261,18 +263,6 @@ export function App() {
     } catch (error) { showError(error); }
   }, [categories, invalidateKnowledge, knowledge, showError]);
 
-  useEffect(() => {
-    const handleDeleteKey = (event: KeyboardEvent) => {
-      if (section !== "knowledge" || event.key !== "Delete" || (!selection.nodeIds.length && !selection.categoryIds.length)) return;
-      const target = event.target as HTMLElement | null;
-      if (target?.matches("input, textarea, [contenteditable='true']")) return;
-      event.preventDefault();
-      void deleteSelection(selection);
-    };
-    window.addEventListener("keydown", handleDeleteKey);
-    return () => window.removeEventListener("keydown", handleDeleteKey);
-  }, [deleteSelection, section, selection]);
-
   const moveItem = useCallback(async (kind: "category" | "knowledge", id: string, destinationCategoryId: string) => {
     try {
       if (kind === "category") {
@@ -388,6 +378,25 @@ export function App() {
   } : undefined;
   const detailOpen = Boolean(activeNode || draftSeed);
 
+  const hotkeys = settingsQuery.data?.hotkeys ?? defaultHotkeys;
+  useHotkeys([
+    { hotkey: hotkeys.search as Hotkey, callback: () => searchInputRef.current?.focus(), options: { meta: { name: "Search" } } },
+    { hotkey: hotkeys.newKnowledge as Hotkey, callback: () => {
+      setSection("knowledge");
+      const selected = selection.categoryIds.length === 1 ? selection.categoryIds[0] : undefined;
+      const preferred = selected ?? rootId;
+      if (preferred) setDraftCategoryId(preferred);
+    }, options: { meta: { name: "New knowledge" } } },
+    { hotkey: hotkeys.openSelected as Hotkey, callback: () => openNodes(selection.nodeIds), options: { enabled: section === "knowledge" && selection.nodeIds.length > 0, meta: { name: "Open selected" } } },
+    { hotkey: hotkeys.deleteSelected as Hotkey, callback: () => void deleteSelection(selection), options: { enabled: section === "knowledge" && selectedCount > 0, meta: { name: "Delete selected" } } },
+    { hotkey: hotkeys.expandAll as Hotkey, callback: expandAll, options: { enabled: section === "knowledge", meta: { name: "Expand tree" } } },
+    { hotkey: hotkeys.collapseAll as Hotkey, callback: collapseAll, options: { enabled: section === "knowledge", meta: { name: "Collapse tree" } } },
+    { hotkey: hotkeys.topicalWorkspace as Hotkey, callback: () => { setSection("knowledge"); setWorkspace("topic"); }, options: { meta: { name: "Topical workspace" } } },
+    { hotkey: hotkeys.projectWorkspace as Hotkey, callback: () => { setSection("knowledge"); setWorkspace("project"); }, options: { meta: { name: "Project workspace" } } },
+    { hotkey: hotkeys.reviewQueue as Hotkey, callback: () => setSection("review"), options: { meta: { name: "Review Queue" } } },
+    { hotkey: hotkeys.settings as Hotkey, callback: () => setSection("settings"), options: { meta: { name: "Settings" } } },
+  ], { ignoreInputs: true, enabled: section !== "settings" });
+
   const categoryMoveOptions = useMemo(() => {
     if (!moveDialog) return [];
     const movingCategoryIds = new Set(moveDialog.categoryIds);
@@ -451,7 +460,7 @@ export function App() {
       <AppShell.Header className="app-header">
         <Group h="100%" px="md" wrap="nowrap">
           <Group gap="xs" className="brand"><div className="brand-mark"><IconSitemap size={20} /></div><Text fw={800} fz="lg">Knowt</Text></Group>
-          <SearchBox onRevealNode={revealNodeSearch} onOpenNode={(node) => { setSection("knowledge"); openNode(node.id); }} onRevealCategory={revealCategorySearch} />
+          <SearchBox inputRef={searchInputRef} onRevealNode={revealNodeSearch} onOpenNode={(node) => { setSection("knowledge"); openNode(node.id); }} onRevealCategory={revealCategorySearch} />
           <Button leftSection={<IconPlus size={16} />} onClick={() => {
             const preferred = selectedCategory?.id ?? rootId;
             if (preferred) setDraftCategoryId(preferred);
@@ -484,7 +493,7 @@ export function App() {
                   <Tooltip label={selectionHasProtectedCategory ? "Protected fallback categories cannot be deleted" : "Delete selected nodes and categories"}><Button variant="light" color="red" size="sm" leftSection={<IconTrash size={16} />} disabled={selectionHasProtectedCategory} onClick={() => void deleteSelection(selection)}>Delete</Button></Tooltip>
                 </Group>}
               </Group>
-              <div className="canvas-wrap" onKeyDown={(event) => { if (event.key === "Enter" && selection.nodeIds.length) openNodes(selection.nodeIds); }}>
+              <div className="canvas-wrap">
                 {rootId && layout && <TreeCanvas key={`${workspace}:${rootId}`} workspace={workspace} rootId={rootId} categories={workspaceCategories} knowledge={knowledge} layout={layout} focusedItemId={focusedTreeItemId} actions={treeActions} onOpenNode={openNode} onSaveLayout={saveCurrentLayout} onMoveItem={moveItem} onSelectionChange={updateSelection} />}
               </div>
             </section>

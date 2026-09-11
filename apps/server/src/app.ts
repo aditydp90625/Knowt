@@ -5,6 +5,7 @@ import {
   categoryCreateSchema,
   categoryMoveSchema,
   categoryRenameSchema,
+  defaultHotkeys,
   layoutStateSchema,
   nodeMoveSchema,
   nodeWriteSchema,
@@ -43,6 +44,18 @@ const settingsSchema = z.object({
   theme: z.enum(["light", "dark", "system"]),
   inboxPath: z.string().trim().min(1).max(1_000),
   rejectedRetentionDays: z.number().int().min(1).max(365),
+  hotkeys: z.object({
+    search: z.string().min(1).max(80),
+    newKnowledge: z.string().min(1).max(80),
+    openSelected: z.string().min(1).max(80),
+    deleteSelected: z.string().min(1).max(80),
+    expandAll: z.string().min(1).max(80),
+    collapseAll: z.string().min(1).max(80),
+    topicalWorkspace: z.string().min(1).max(80),
+    projectWorkspace: z.string().min(1).max(80),
+    reviewQueue: z.string().min(1).max(80),
+    settings: z.string().min(1).max(80),
+  }).default(defaultHotkeys),
 });
 const createParentSchema = z.object({
   workspace: workspaceSchema,
