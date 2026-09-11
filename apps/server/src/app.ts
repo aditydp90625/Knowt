@@ -175,7 +175,7 @@ export async function buildApp(options: AppOptions = {}): Promise<FastifyInstanc
     const row = context.orm.select().from(layoutStates).where(and(
       eq(layoutStates.workspace, workspace), eq(layoutStates.rootId, rootId),
     )).get();
-    return row ? JSON.parse(row.stateJson) : null;
+    return row ? layoutStateSchema.parse(JSON.parse(row.stateJson)) : null;
   });
   app.put("/api/layout/:workspace/:rootId", async (request) => {
     const { workspace, rootId } = layoutParams.parse(request.params);

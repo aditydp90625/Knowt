@@ -80,6 +80,7 @@ export const nodeMoveSchema = z.object({
 export const layoutStateSchema = z.object({
   viewport: z.object({ x: z.number(), y: z.number(), zoom: z.number().positive() }),
   expandedCategoryIds: z.array(z.string().uuid()),
+  showKnowledgeNodes: z.boolean().default(true),
   positions: z.record(z.string(), z.object({ x: z.number(), y: z.number() })),
 });
 export type LayoutState = z.infer<typeof layoutStateSchema>;

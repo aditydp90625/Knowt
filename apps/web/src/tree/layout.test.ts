@@ -17,6 +17,11 @@ describe("tree projection", () => {
     expect(projectTree("topic", root.id, [root, child], [node], new Set([root.id, child.id]), {}).nodes).toHaveLength(3);
   });
 
+  it("can show the full category hierarchy without knowledge nodes", () => {
+    const result = projectTree("topic", root.id, [root, child], [node], new Set([root.id, child.id]), {}, "medium", false);
+    expect(result.nodes.map((item) => item.data.entity)).toEqual(["category", "category"]);
+  });
+
   it("retains saved spatial positions", () => {
     const result = projectTree("topic", root.id, [root], [], new Set([root.id]), { [`category:${root.id}`]: { x: 123, y: 456 } });
     expect(result.nodes[0]?.position).toEqual({ x: 123, y: 456 });

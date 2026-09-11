@@ -29,6 +29,7 @@ export function projectTree(
   expandedCategoryIds: Set<string>,
   savedPositions: Record<string, XYPosition>,
   detail: TreeItemData["detail"] = "medium",
+  showKnowledgeNodes = true,
 ): TreeProjection {
   const categoryById = new Map(categories.map((category) => [category.id, category]));
   const visibleCategories: Category[] = [];
@@ -42,10 +43,10 @@ export function projectTree(
   };
   visit(rootId);
   const visibleIds = new Set(visibleCategories.map((category) => category.id));
-  const visibleKnowledge = knowledge.filter((item) => {
+  const visibleKnowledge = showKnowledgeNodes ? knowledge.filter((item) => {
     const categoryId = workspace === "topic" ? item.topicCategoryId : item.projectCategoryId;
     return visibleIds.has(categoryId) && expandedCategoryIds.has(categoryId);
-  });
+  }) : [];
 
   const flowNodes: Array<Node<TreeItemData>> = [
     ...visibleCategories.map((category) => ({

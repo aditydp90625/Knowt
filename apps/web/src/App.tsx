@@ -31,6 +31,8 @@ import {
   IconLibraryPlus,
   IconFolderOpen,
   IconArrowsMove,
+  IconArrowsMaximize,
+  IconArrowsMinimize,
   IconPlus,
   IconSettings,
   IconSitemap,
@@ -54,7 +56,7 @@ type MoveDialog = Selection;
 interface UndoAction { label: string; run(): Promise<void> }
 
 const emptyLayout = (rootId: string): LayoutState => ({
-  viewport: { x: 60, y: 36, zoom: 0.9 }, expandedCategoryIds: [rootId], positions: {},
+  viewport: { x: 60, y: 36, zoom: 0.9 }, expandedCategoryIds: [rootId], showKnowledgeNodes: true, positions: {},
 });
 
 export function App() {
@@ -148,6 +150,37 @@ export function App() {
     const expanded = new Set(current.expandedCategoryIds);
     if (expanded.has(categoryId) && categoryId !== rootId) expanded.delete(categoryId); else expanded.add(categoryId);
     saveCurrentLayout({ ...current, expandedCategoryIds: [...expanded] });
+  }, [layout, rootId, saveCurrentLayout]);
+
+  const subtreeCategoryIds = useMemo(() => {
+    if (!rootId) return [];
+    const children = new Map<string, string[]>();
+    for (const category of workspaceCategories) {
+      if (!category.parentId) continue;
+      children.set(category.parentId, [...(children.get(category.parentId) ?? []), category.id]);
+    }
+    const result: string[] = [];
+    const visit = (id: string) => { result.push(id); for (const child of children.get(id) ?? []) visit(child); };
+    visit(rootId);
+    return result;
+  }, [rootId, workspaceCategories]);
+
+  const expandAll = useCallback(() => {
+    if (!rootId) return;
+    const current = layout ?? emptyLayout(rootId);
+    const expanded = new Set(current.expandedCategoryIds);
+    const allCategoriesVisible = subtreeCategoryIds.every((id) => expanded.has(id));
+    saveCurrentLayout(allCategoriesVisible
+      ? { ...current, showKnowledgeNodes: true }
+      : { ...current, expandedCategoryIds: subtreeCategoryIds, showKnowledgeNodes: false, positions: {} });
+  }, [layout, rootId, saveCurrentLayout, subtreeCategoryIds]);
+
+  const collapseAll = useCallback(() => {
+    if (!rootId) return;
+    const current = layout ?? emptyLayout(rootId);
+    saveCurrentLayout(current.showKnowledgeNodes
+      ? { ...current, showKnowledgeNodes: false, positions: {} }
+      : { ...current, expandedCategoryIds: [], positions: {} });
   }, [layout, rootId, saveCurrentLayout]);
 
   const showError = useCallback((error: unknown) => notifications.show({ color: "red", title: "Change not applied", message: error instanceof Error ? error.message : String(error) }), []);
@@ -441,6 +474,8 @@ export function App() {
                 <SegmentedControl value={workspace} onChange={(value) => { setWorkspace(value as Workspace); setSelection({ categoryIds: [], nodeIds: [] }); }} data={[{ label: "Topical", value: "topic" }, { label: "Projects", value: "project" }]} />
                 <Select className="root-select" value={rootId ?? null} onChange={(value) => value && setRootByWorkspace((current) => ({ ...current, [workspace]: value }))} data={roots.map((item) => ({ value: item.id, label: item.name }))} placeholder="Choose root" />
                 <Tooltip label="Create root category"><ActionIcon variant="light" size="lg" onClick={() => startNameDialog({ mode: "create", title: `Create ${workspace} root`, parentId: null })}><IconFolderPlus size={18} /></ActionIcon></Tooltip>
+                <Tooltip label={subtreeCategoryIds.every((id) => layout?.expandedCategoryIds.includes(id)) && !layout?.showKnowledgeNodes ? "Show all knowledge nodes" : "Expand all categories"}><ActionIcon variant="light" size="lg" onClick={expandAll}><IconArrowsMaximize size={18} /></ActionIcon></Tooltip>
+                <Tooltip label={layout?.showKnowledgeNodes ? "Hide all knowledge nodes" : "Collapse to the root"}><ActionIcon variant="light" size="lg" onClick={collapseAll}><IconArrowsMinimize size={18} /></ActionIcon></Tooltip>
                 {selectedCount > 0 && <Group gap={6} wrap="nowrap" className="selection-actions">
                   <Badge variant="light" color="gray">{selectedCount} selected</Badge>
                   {selection.nodeIds.length > 0 && <Button variant="light" size="sm" leftSection={<IconFolderOpen size={16} />} onClick={() => openNodes(selection.nodeIds)}>Open{selection.nodeIds.length > 1 ? ` ${selection.nodeIds.length}` : ""}</Button>}
