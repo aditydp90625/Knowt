@@ -147,6 +147,12 @@ const rawPathHintSchema = z.object({
   origin: z.enum(["llm", "user"]),
 });
 
+const rawProposalImageSchema = z.object({
+  file_name: z.string().trim().min(1).max(240).regex(/^[^/\\]+$/),
+  media_type: z.enum(["image/png", "image/jpeg", "image/gif", "image/webp", "image/avif"]),
+  content_base64: z.string().min(4).max(12_000_000).regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/),
+});
+
 export const pathHintSchema = rawPathHintSchema.transform((value) => ({
   pathHint: value.path_hint,
   origin: value.origin,
@@ -160,6 +166,7 @@ const rawProposalNodeInputSchema = z.object({
   topic: rawPathHintSchema,
   project: rawPathHintSchema,
   tags: z.array(z.string().trim().min(1).max(80)).max(30).default([]),
+  images: z.array(rawProposalImageSchema).max(6).default([]),
 });
 
 export const proposalNodeInputSchema = rawProposalNodeInputSchema.transform((value) => ({
@@ -170,6 +177,11 @@ export const proposalNodeInputSchema = rawProposalNodeInputSchema.transform((val
   topic: { pathHint: value.topic.path_hint, origin: value.topic.origin },
   project: { pathHint: value.project.path_hint, origin: value.project.origin },
   tags: value.tags,
+  images: value.images.map((image) => ({
+    fileName: image.file_name,
+    mediaType: image.media_type,
+    contentBase64: image.content_base64,
+  })),
 }));
 
 export const inboxSubmissionInputSchema = z.object({
@@ -199,6 +211,11 @@ export const inboxSubmissionSchema = inboxSubmissionInputSchema.transform((value
     topic: { pathHint: node.topic.path_hint, origin: node.topic.origin },
     project: { pathHint: node.project.path_hint, origin: node.project.origin },
     tags: node.tags,
+    images: node.images.map((image) => ({
+      fileName: image.file_name,
+      mediaType: image.media_type,
+      contentBase64: image.content_base64,
+    })),
   })),
 }));
 export type InboxSubmissionInput = z.input<typeof inboxSubmissionInputSchema>;

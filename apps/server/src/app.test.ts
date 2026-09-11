@@ -248,6 +248,11 @@ describe("Knowt API", () => {
           topic: { path_hint: ["Digital Design"], origin: "llm" },
           project: { path_hint: ["General"], origin: "llm" },
           tags: ["MCP"],
+          images: [{
+            file_name: "one-pixel.png",
+            media_type: "image/png",
+            content_base64: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+          }],
         }],
       },
     });
@@ -257,8 +262,12 @@ describe("Knowt API", () => {
       submission_id: "mcp-submission-one",
       proposal_count: 1,
     });
-    expect((await app.inject({ method: "GET", url: "/api/proposals?status=pending" })).json()).toHaveLength(1);
+    const pending = (await app.inject({ method: "GET", url: "/api/proposals?status=pending" })).json();
+    expect(pending).toHaveLength(1);
     expect((await app.inject({ method: "GET", url: "/api/search?q=MCP" })).json()).toEqual([]);
+    const approved = (await app.inject({ method: "POST", url: `/api/proposals/${pending[0].id}/approve`, payload: {} })).json();
+    const nodeAttachments = (await app.inject({ method: "GET", url: `/api/nodes/${approved.canonicalNodeId}/attachments` })).json();
+    expect(nodeAttachments).toEqual([expect.objectContaining({ originalName: "one-pixel.png", mediaType: "image/png" })]);
   });
 
   it("exports a validated portable archive", async () => {

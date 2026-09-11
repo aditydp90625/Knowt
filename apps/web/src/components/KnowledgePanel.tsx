@@ -10,6 +10,7 @@ import {
   Divider,
   FileButton,
   Group,
+  Image,
   LoadingOverlay,
   Paper,
   ScrollArea,
@@ -233,7 +234,7 @@ export function KnowledgePanel({ node, draft, categories, knowledgeTypes, onSave
 
 function AttachmentList({ attachments, onDelete }: { attachments: Awaited<ReturnType<typeof api.attachments>>; onDelete?: (id: string) => void }) {
   if (!attachments.length) return <Text size="sm" c="dimmed">No attachments</Text>;
-  return <Stack gap={5}>{attachments.map((attachment) => <Group key={attachment.id} justify="space-between"><Group gap="xs"><IconPaperclip size={15} /><Anchor href={attachment.url} target="_blank" size="sm">{attachment.originalName}</Anchor><Text size="xs" c="dimmed">{formatBytes(attachment.sizeBytes)}</Text></Group>{onDelete && <ActionIcon color="red" variant="subtle" size="sm" onClick={() => onDelete(attachment.id)}><IconTrash size={14} /></ActionIcon>}</Group>)}</Stack>;
+  return <Stack gap={5}>{attachments.map((attachment) => <Group key={attachment.id} justify="space-between"><Group gap="xs">{attachment.mediaType.startsWith("image/") ? <Image src={attachment.url} alt="" w={36} h={36} fit="cover" radius="sm" /> : <IconPaperclip size={15} />}<Anchor href={attachment.url} target="_blank" size="sm">{attachment.originalName}</Anchor><Text size="xs" c="dimmed">{formatBytes(attachment.sizeBytes)}</Text></Group>{onDelete && <ActionIcon color="red" variant="subtle" size="sm" onClick={() => onDelete(attachment.id)}><IconTrash size={14} /></ActionIcon>}</Group>)}</Stack>;
 }
 
 function formatBytes(value: number): string {

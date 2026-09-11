@@ -4,15 +4,18 @@ import type { DatabaseContext } from "../db/database.js";
 import { knowledgeTypes, proposals, submissions } from "../db/schema.js";
 import { conflict, notFound } from "../domain/errors.js";
 import { CategoryRepository } from "./category-repository.js";
+import { AttachmentRepository } from "./attachment-repository.js";
 import { NodeRepository } from "./node-repository.js";
 
 export class ProposalRepository {
   private readonly categories: CategoryRepository;
   private readonly nodes: NodeRepository;
+  private readonly attachments: AttachmentRepository;
 
   constructor(private readonly context: DatabaseContext) {
     this.categories = new CategoryRepository(context);
     this.nodes = new NodeRepository(context);
+    this.attachments = new AttachmentRepository(context);
   }
 
   submit(input: InboxSubmission): Proposal[] {
@@ -73,6 +76,9 @@ export class ProposalRepository {
       sourceDetails: hydrated.source.conversationTitle ?? `${hydrated.source.system} submission`,
     };
     const node = this.nodes.create(value, "Approved from Review Queue");
+    for (const image of hydrated.payload.images ?? []) {
+      this.attachments.add(node.id, image.fileName, image.mediaType, Buffer.from(image.contentBase64, "base64"));
+    }
     const reviewedAt = new Date().toISOString();
     this.context.orm.update(proposals).set({ status: "approved", canonicalNodeId: node.id, reviewedAt })
       .where(eq(proposals.id, id)).run();

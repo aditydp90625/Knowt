@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Category, KnowledgeType, NodeWrite, Proposal } from "@knowt/contracts";
-import { Alert, Badge, Box, Button, Group, Paper, ScrollArea, Select, Stack, TagsInput, Text, TextInput, Title } from "@mantine/core";
+import { Alert, Badge, Box, Button, Group, Image, Paper, ScrollArea, Select, SimpleGrid, Stack, TagsInput, Text, TextInput, Title } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { IconAlertTriangle, IconCheck, IconChecks, IconFolderPlus, IconInbox, IconX } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -130,6 +130,15 @@ function ProposalEditor({ proposal, categories, knowledgeTypes, onFinished, onAp
           <Button style={{ alignSelf: "flex-start" }} size="xs" variant="light" color="orange" leftSection={<IconFolderPlus size={15} />} loading={createProject.isPending} onClick={() => createProject.mutate()}>Create project path</Button>
         </Stack>
       </Alert>}
+      {(proposal.payload.images ?? []).length > 0 && <Paper withBorder p="md">
+        <Text fw={600} mb="sm">Submitted images</Text>
+        <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }}>
+          {(proposal.payload.images ?? []).map((image, index) => <Box key={`${image.fileName}:${index}`}>
+            <Image src={`data:${image.mediaType};base64,${image.contentBase64}`} alt={image.fileName} h={150} fit="contain" radius="sm" />
+            <Text size="xs" c="dimmed" mt={4} lineClamp={1}>{image.fileName}</Text>
+          </Box>)}
+        </SimpleGrid>
+      </Paper>}
       <Paper withBorder p="md"><Stack>
         <TextInput label="Title" required value={form.title} onChange={(event) => setForm({ ...form, title: event.currentTarget.value })} />
         <Group grow align="start">

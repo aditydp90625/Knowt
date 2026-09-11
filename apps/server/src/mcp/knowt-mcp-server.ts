@@ -24,7 +24,7 @@ export function createKnowtMcpServer(ingestion: IngestionService): McpServer {
 
   server.registerTool("submit_knowledge_packets", {
     title: "Stage knowledge packets in Knowt",
-    description: "Validates and stages one approved batch of structured knowledge packets in Knowt's Review Queue. This never writes directly to the canonical knowledge base. Call only after the user explicitly approves the proposed packets.",
+    description: "Validates and stages one approved batch of structured knowledge packets in Knowt's Review Queue. Packets may include raster images as base64-encoded attachments. This never writes directly to the canonical knowledge base. Call only after the user explicitly approves the proposed packets.",
     inputSchema: inboxSubmissionInputSchema,
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   }, async (input) => {

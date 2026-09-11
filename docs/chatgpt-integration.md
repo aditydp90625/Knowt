@@ -139,6 +139,7 @@ For submit_knowledge_packets:
 - source.created_at must be the current ISO 8601 UTC timestamp.
 - source.conversation_title should be a short description of this conversation when available.
 - Every node needs a unique client_node_id, a concise title, one allowed knowledge_type, non-empty content_markdown, one topic path, one project path and a short deduplicated tag list.
+- When I explicitly ask to retain an image with a packet, include it in that node's images array with file_name, a supported raster media_type and content_base64. Do not attach unrelated conversation images.
 - Do not include private conversation material, credentials or personal data unless I explicitly ask for that exact material to be captured.
 
 A successful submission means only that the packets were staged in Knowt's Review Queue. Tell me that review is still required; never say the packets are part of the canonical knowledge base until I approve them in Knowt. If submission fails, report the error and retain the exact payload and submission_id for a safe identical retry unless the payload itself must be corrected.
