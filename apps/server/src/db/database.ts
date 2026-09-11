@@ -1,14 +1,17 @@
 import { copyFileSync, mkdirSync, rmSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { DatabaseSync } from "node:sqlite";
 import { drizzle, type NodeSQLiteDatabase } from "drizzle-orm/node-sqlite";
 import { migrate } from "./migrations.js";
+
+export const DEFAULT_DATABASE_PATH = fileURLToPath(new URL("../../../../data/knowt.sqlite", import.meta.url));
 
 export class DatabaseContext {
   sqlite!: DatabaseSync;
   orm!: NodeSQLiteDatabase;
 
-  constructor(public readonly path = process.env.KNOWT_DB_PATH ?? resolve("data/knowt.sqlite")) {
+  constructor(public readonly path = process.env.KNOWT_DB_PATH ?? DEFAULT_DATABASE_PATH) {
     if (path !== ":memory:") mkdirSync(dirname(path), { recursive: true });
     this.open();
   }
