@@ -80,9 +80,16 @@ export const nodeMoveSchema = z.object({
 export const layoutStateSchema = z.object({
   viewport: z.object({ x: z.number(), y: z.number(), zoom: z.number().positive() }),
   expandedCategoryIds: z.array(z.string().uuid()),
-  showKnowledgeNodes: z.boolean().default(true),
+  showAllCategories: z.boolean().optional(),
+  showKnowledgeNodes: z.boolean().optional(),
   positions: z.record(z.string(), z.object({ x: z.number(), y: z.number() })),
-});
+}).transform(({ showAllCategories, showKnowledgeNodes, ...state }) => ({
+  ...state,
+  expandedCategoryIds: showAllCategories === undefined && showKnowledgeNodes === false
+    ? []
+    : state.expandedCategoryIds,
+  showAllCategories: showAllCategories ?? showKnowledgeNodes === false,
+}));
 export type LayoutState = z.infer<typeof layoutStateSchema>;
 
 export const revisionSummarySchema = z.object({

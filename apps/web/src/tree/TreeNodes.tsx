@@ -25,7 +25,7 @@ const MenuItem = ({ children, danger, onSelect }: { children: React.ReactNode; d
 export function CategoryTreeNode({ data, selected }: NodeProps) {
   const value = data as TreeItemData;
   const category = value.category!;
-  const hasContents = category.descendantNodeCount > 0;
+  const hasContents = value.categoriesForcedVisible ? category.directNodeCount > 0 : category.descendantNodeCount > 0;
   return (
     <ContextMenu.Root>
       <ContextMenu.Trigger asChild>
@@ -36,7 +36,9 @@ export function CategoryTreeNode({ data, selected }: NodeProps) {
               className="nodrag"
               variant="subtle"
               size="sm"
-              aria-label={value.expanded ? "Collapse category" : "Expand category"}
+              aria-label={value.categoriesForcedVisible
+                ? value.expanded ? "Hide category nodes" : "Show category nodes"
+                : value.expanded ? "Collapse category" : "Expand category"}
               disabled={!hasContents}
               onClick={(event) => { event.stopPropagation(); actions?.toggle(category.id); }}
             >

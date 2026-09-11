@@ -43,8 +43,8 @@ function Canvas(props: Props) {
   const [detail, setDetail] = useState<TreeItemData["detail"]>("medium");
   const projected = useMemo(() => projectTree(
     props.workspace, props.rootId, props.categories, props.knowledge, expanded,
-    props.layout?.positions ?? {}, detail, props.layout?.showKnowledgeNodes ?? true,
-  ), [props.workspace, props.rootId, props.categories, props.knowledge, props.layout?.positions, props.layout?.showKnowledgeNodes, expanded, detail]);
+    props.layout?.positions ?? {}, detail, props.layout?.showAllCategories ?? false,
+  ), [props.workspace, props.rootId, props.categories, props.knowledge, props.layout?.positions, props.layout?.showAllCategories, expanded, detail]);
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<TreeItemData>>(projected.nodes);
   const [dropTargetId, setDropTargetId] = useState<string>();
   const instance = useRef<ReactFlowInstance<Node<TreeItemData>> | null>(null);
@@ -58,10 +58,10 @@ function Canvas(props: Props) {
     onSaveLayout({
       viewport: viewport.current,
       expandedCategoryIds: [...nextExpanded],
-      showKnowledgeNodes: props.layout?.showKnowledgeNodes ?? true,
+      showAllCategories: props.layout?.showAllCategories ?? false,
       positions: positionsOf(instance.current?.getNodes() ?? nodes),
     });
-  }, [nodes, onSaveLayout, props.layout?.showKnowledgeNodes]);
+  }, [nodes, onSaveLayout, props.layout?.showAllCategories]);
 
   const onMoveEnd: OnMoveEnd = useCallback((_event, nextViewport) => {
     viewport.current = nextViewport;

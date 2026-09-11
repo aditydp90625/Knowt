@@ -18,8 +18,13 @@ describe("tree projection", () => {
   });
 
   it("can show the full category hierarchy without knowledge nodes", () => {
-    const result = projectTree("topic", root.id, [root, child], [node], new Set([root.id, child.id]), {}, "medium", false);
+    const result = projectTree("topic", root.id, [root, child], [node], new Set(), {}, "medium", true);
     expect(result.nodes.map((item) => item.data.entity)).toEqual(["category", "category"]);
+  });
+
+  it("can reveal nodes for one category while the full category hierarchy remains visible", () => {
+    const result = projectTree("topic", root.id, [root, child], [node], new Set([child.id]), {}, "medium", true);
+    expect(result.nodes.map((item) => item.data.entity)).toEqual(["category", "category", "knowledge"]);
   });
 
   it("retains saved spatial positions", () => {

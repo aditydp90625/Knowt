@@ -295,6 +295,24 @@ describe("Knowt API", () => {
     expect(DEFAULT_DATABASE_PATH).toBe(fileURLToPath(new URL("../../../data/knowt.sqlite", import.meta.url)));
   });
 
+  it("migrates the legacy global node-visibility layout to categories-only mode", async () => {
+    const { digital } = await fixtures();
+    const response = await app.inject({
+      method: "PUT",
+      url: `/api/layout/topic/${digital.id}`,
+      payload: {
+        viewport: { x: 0, y: 0, zoom: 1 },
+        expandedCategoryIds: [digital.id],
+        showKnowledgeNodes: false,
+        positions: {},
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({ showAllCategories: true, expandedCategoryIds: [] });
+    expect(response.json()).not.toHaveProperty("showKnowledgeNodes");
+  });
+
   it("serves frontend assets created after the server starts", async () => {
     await app.close();
     const webDirectory = join(directory, "web");

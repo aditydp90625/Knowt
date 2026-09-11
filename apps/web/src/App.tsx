@@ -49,6 +49,7 @@ import { SettingsView } from "./components/SettingsView";
 import { TrashView } from "./components/TrashView";
 import { TreeCanvas } from "./tree/TreeCanvas";
 import type { TreeNodeActions } from "./tree/TreeNodes";
+import { collapseAllLayout, expandAllLayout, toggleCategoryLayout } from "./tree/layout-state";
 
 type Section = "knowledge" | "review" | "trash" | "settings";
 type Selection = { categoryIds: string[]; nodeIds: string[] };
@@ -57,7 +58,7 @@ type MoveDialog = Selection;
 interface UndoAction { label: string; run(): Promise<void> }
 
 const emptyLayout = (rootId: string): LayoutState => ({
-  viewport: { x: 60, y: 36, zoom: 0.9 }, expandedCategoryIds: [rootId], showKnowledgeNodes: true, positions: {},
+  viewport: { x: 60, y: 36, zoom: 0.9 }, expandedCategoryIds: [rootId], showAllCategories: false, positions: {},
 });
 
 export function App() {
@@ -149,9 +150,7 @@ export function App() {
   const toggleCategory = useCallback((categoryId: string) => {
     if (!rootId) return;
     const current = layout ?? emptyLayout(rootId);
-    const expanded = new Set(current.expandedCategoryIds);
-    if (expanded.has(categoryId) && categoryId !== rootId) expanded.delete(categoryId); else expanded.add(categoryId);
-    saveCurrentLayout({ ...current, expandedCategoryIds: [...expanded] });
+    saveCurrentLayout(toggleCategoryLayout(current, rootId, categoryId));
   }, [layout, rootId, saveCurrentLayout]);
 
   const subtreeCategoryIds = useMemo(() => {
@@ -170,19 +169,13 @@ export function App() {
   const expandAll = useCallback(() => {
     if (!rootId) return;
     const current = layout ?? emptyLayout(rootId);
-    const expanded = new Set(current.expandedCategoryIds);
-    const allCategoriesVisible = subtreeCategoryIds.every((id) => expanded.has(id));
-    saveCurrentLayout(allCategoriesVisible
-      ? { ...current, showKnowledgeNodes: true }
-      : { ...current, expandedCategoryIds: subtreeCategoryIds, showKnowledgeNodes: false, positions: {} });
+    saveCurrentLayout(expandAllLayout(current, subtreeCategoryIds));
   }, [layout, rootId, saveCurrentLayout, subtreeCategoryIds]);
 
   const collapseAll = useCallback(() => {
     if (!rootId) return;
     const current = layout ?? emptyLayout(rootId);
-    saveCurrentLayout(current.showKnowledgeNodes
-      ? { ...current, showKnowledgeNodes: false, positions: {} }
-      : { ...current, expandedCategoryIds: [], positions: {} });
+    saveCurrentLayout(collapseAllLayout(current));
   }, [layout, rootId, saveCurrentLayout]);
 
   const showError = useCallback((error: unknown) => notifications.show({ color: "red", title: "Change not applied", message: error instanceof Error ? error.message : String(error) }), []);
@@ -483,8 +476,8 @@ export function App() {
                 <SegmentedControl value={workspace} onChange={(value) => { setWorkspace(value as Workspace); setSelection({ categoryIds: [], nodeIds: [] }); }} data={[{ label: "Topical", value: "topic" }, { label: "Projects", value: "project" }]} />
                 <Select className="root-select" value={rootId ?? null} onChange={(value) => value && setRootByWorkspace((current) => ({ ...current, [workspace]: value }))} data={roots.map((item) => ({ value: item.id, label: item.name }))} placeholder="Choose root" />
                 <Tooltip label="Create root category"><ActionIcon variant="light" size="lg" onClick={() => startNameDialog({ mode: "create", title: `Create ${workspace} root`, parentId: null })}><IconFolderPlus size={18} /></ActionIcon></Tooltip>
-                <Tooltip label={subtreeCategoryIds.every((id) => layout?.expandedCategoryIds.includes(id)) && !layout?.showKnowledgeNodes ? "Show all knowledge nodes" : "Expand all categories"}><ActionIcon variant="light" size="lg" onClick={expandAll}><IconArrowsMaximize size={18} /></ActionIcon></Tooltip>
-                <Tooltip label={layout?.showKnowledgeNodes ? "Hide all knowledge nodes" : "Collapse to the root"}><ActionIcon variant="light" size="lg" onClick={collapseAll}><IconArrowsMinimize size={18} /></ActionIcon></Tooltip>
+                <Tooltip label={layout?.showAllCategories ? "Show all knowledge nodes" : "Show all categories"}><ActionIcon variant="light" size="lg" onClick={expandAll}><IconArrowsMaximize size={18} /></ActionIcon></Tooltip>
+                <Tooltip label={layout?.showAllCategories && layout.expandedCategoryIds.length === 0 ? "Collapse to the root" : "Hide all knowledge nodes"}><ActionIcon variant="light" size="lg" onClick={collapseAll}><IconArrowsMinimize size={18} /></ActionIcon></Tooltip>
                 {selectedCount > 0 && <Group gap={6} wrap="nowrap" className="selection-actions">
                   <Badge variant="light" color="gray">{selectedCount} selected</Badge>
                   {selection.nodeIds.length > 0 && <Button variant="light" size="sm" leftSection={<IconFolderOpen size={16} />} onClick={() => openNodes(selection.nodeIds)}>Open{selection.nodeIds.length > 1 ? ` ${selection.nodeIds.length}` : ""}</Button>}

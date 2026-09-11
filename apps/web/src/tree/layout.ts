@@ -7,6 +7,7 @@ export interface TreeItemData extends Record<string, unknown> {
   category?: Category;
   knowledge?: KnowledgeNode;
   expanded?: boolean;
+  categoriesForcedVisible?: boolean;
   detail: "far" | "medium" | "close";
   dropTarget?: boolean;
 }
@@ -29,7 +30,7 @@ export function projectTree(
   expandedCategoryIds: Set<string>,
   savedPositions: Record<string, XYPosition>,
   detail: TreeItemData["detail"] = "medium",
-  showKnowledgeNodes = true,
+  showAllCategories = false,
 ): TreeProjection {
   const categoryById = new Map(categories.map((category) => [category.id, category]));
   const visibleCategories: Category[] = [];
@@ -37,23 +38,23 @@ export function projectTree(
     const category = categoryById.get(id);
     if (!category) return;
     visibleCategories.push(category);
-    if (!expandedCategoryIds.has(id)) return;
+    if (!showAllCategories && !expandedCategoryIds.has(id)) return;
     categories.filter((candidate) => candidate.parentId === id)
       .sort((a, b) => a.name.localeCompare(b.name)).forEach((child) => visit(child.id));
   };
   visit(rootId);
   const visibleIds = new Set(visibleCategories.map((category) => category.id));
-  const visibleKnowledge = showKnowledgeNodes ? knowledge.filter((item) => {
+  const visibleKnowledge = knowledge.filter((item) => {
     const categoryId = workspace === "topic" ? item.topicCategoryId : item.projectCategoryId;
     return visibleIds.has(categoryId) && expandedCategoryIds.has(categoryId);
-  }) : [];
+  });
 
   const flowNodes: Array<Node<TreeItemData>> = [
     ...visibleCategories.map((category) => ({
       id: `category:${category.id}`,
       type: "category",
       position: savedPositions[`category:${category.id}`] ?? { x: 0, y: 0 },
-      data: { entity: "category" as const, category, expanded: expandedCategoryIds.has(category.id), detail },
+      data: { entity: "category" as const, category, expanded: expandedCategoryIds.has(category.id), categoriesForcedVisible: showAllCategories, detail },
       sourcePosition: Position.Bottom,
       targetPosition: Position.Top,
     })),
