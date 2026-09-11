@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Category, KnowledgeType, NodeWrite, Proposal } from "@knowt/contracts";
-import { Badge, Box, Button, Group, Paper, ScrollArea, Select, Stack, TagsInput, Text, TextInput, Title } from "@mantine/core";
+import { Alert, Badge, Box, Button, Group, Paper, ScrollArea, Select, Stack, TagsInput, Text, TextInput, Title } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
-import { IconCheck, IconChecks, IconInbox, IconX } from "@tabler/icons-react";
+import { IconAlertTriangle, IconCheck, IconChecks, IconFolderPlus, IconInbox, IconX } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api/client";
 import { MarkdownEditor } from "./MarkdownEditor";
@@ -21,6 +21,39 @@ function options(categories: Category[], workspace: "topic" | "project") {
     while (parent) { names.unshift(parent.name); parent = parent.parentId ? byId.get(parent.parentId) : undefined; }
     return { value: item.id, label: names.join(" / ") };
   }).sort((a, b) => a.label.localeCompare(b.label));
+}
+
+const normalizePathPart = (value: string) => value.trim().replace(/\s+/g, " ").toLocaleLowerCase("en-GB");
+
+function pathsMatch(actual: Array<{ name: string }>, requested: string[]): boolean {
+  return actual.length === requested.length && actual.every((part, index) => normalizePathPart(part.name) === normalizePathPart(requested[index]!));
+}
+
+function categoryPath(categories: Category[], id: string): Array<{ name: string }> {
+  const byId = new Map(categories.map((item) => [item.id, item]));
+  const result: Array<{ name: string }> = [];
+  let current = byId.get(id);
+  while (current) {
+    result.unshift({ name: current.name });
+    current = current.parentId ? byId.get(current.parentId) : undefined;
+  }
+  return result;
+}
+
+async function createMissingProjectPath(categories: Category[], path: string[]): Promise<Category> {
+  const known = categories.filter((item) => item.workspace === "project");
+  let parentId: string | null = null;
+  let current: Category | undefined;
+  for (const segment of path) {
+    current = known.find((item) => item.parentId === parentId && normalizePathPart(item.name) === normalizePathPart(segment));
+    if (!current) {
+      current = await api.createCategory({ workspace: "project", parentId, name: segment });
+      known.push(current);
+    }
+    parentId = current.id;
+  }
+  if (!current) throw new Error("The requested project path is empty");
+  return current;
 }
 
 export function ReviewQueue({ categories, knowledgeTypes }: Props) {
@@ -59,6 +92,7 @@ export function ReviewQueue({ categories, knowledgeTypes }: Props) {
 }
 
 function ProposalEditor({ proposal, categories, knowledgeTypes, onFinished, onApproveAll, approveAllPending, siblingCount }: Props & { proposal: Proposal; onFinished(): Promise<void>; onApproveAll(node: NodeWrite): void; approveAllPending: boolean; siblingCount: number }) {
+  const client = useQueryClient();
   const type = knowledgeTypes.find((item) => item.name === proposal.payload.knowledgeType);
   const [form, setForm] = useState<NodeWrite>({
     title: proposal.payload.title,
@@ -74,10 +108,27 @@ function ProposalEditor({ proposal, categories, knowledgeTypes, onFinished, onAp
     mutationFn: () => api.approveProposal(proposal.id, form),
     onSuccess: async () => { await onFinished(); notifications.show({ color: "teal", message: "Proposal committed to the Knowledge Base" }); },
   });
+  const requestedProjectPath = proposal.payload.project.pathHint;
+  const projectPathMissing = !pathsMatch(categoryPath(categories, form.projectCategoryId), requestedProjectPath);
+  const createProject = useMutation({
+    mutationFn: () => createMissingProjectPath(categories, requestedProjectPath),
+    onSuccess: async (category) => {
+      setForm((current) => ({ ...current, projectCategoryId: category.id }));
+      await client.invalidateQueries({ queryKey: ["taxonomy"] });
+      notifications.show({ color: "teal", message: `Created project path ${requestedProjectPath.join(" / ")}` });
+    },
+    onError: (error: Error) => notifications.show({ color: "red", title: "Project not created", message: error.message }),
+  });
   const reject = useMutation({ mutationFn: () => api.rejectProposal(proposal.id), onSuccess: onFinished });
   return (
     <Stack p="lg" gap="md" className="proposal-editor">
       <Group justify="space-between"><Box><Text size="xs" tt="uppercase" c="dimmed" fw={700}>From {proposal.source.system}</Text><Text size="sm">{proposal.source.conversationTitle}</Text></Box><Group>{siblingCount > 1 && <Button variant="light" leftSection={<IconChecks size={16} />} loading={approveAllPending} onClick={() => onApproveAll(form)}>Approve all {siblingCount}</Button>}<Button color="red" variant="subtle" leftSection={<IconX size={16} />} onClick={() => reject.mutate()}>Reject</Button><Button leftSection={<IconCheck size={16} />} loading={approve.isPending} onClick={() => approve.mutate()}>Approve</Button></Group></Group>
+      {projectPathMissing && <Alert color="orange" icon={<IconAlertTriangle size={18} />} title="Requested project path does not exist">
+        <Stack gap="sm">
+          <Text size="sm">The submission requested <b>{requestedProjectPath.join(" / ")}</b>. Choose an existing project below or create the missing path.</Text>
+          <Button style={{ alignSelf: "flex-start" }} size="xs" variant="light" color="orange" leftSection={<IconFolderPlus size={15} />} loading={createProject.isPending} onClick={() => createProject.mutate()}>Create project path</Button>
+        </Stack>
+      </Alert>}
       <Paper withBorder p="md"><Stack>
         <TextInput label="Title" required value={form.title} onChange={(event) => setForm({ ...form, title: event.currentTarget.value })} />
         <Group grow align="start">
