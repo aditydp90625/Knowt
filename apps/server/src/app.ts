@@ -75,6 +75,7 @@ export interface AppOptions {
   databasePath?: string;
   watchInbox?: boolean;
   logger?: boolean;
+  webDirectory?: string | false;
 }
 
 export async function buildApp(options: AppOptions = {}): Promise<FastifyInstance> {
@@ -307,9 +308,11 @@ export async function buildApp(options: AppOptions = {}): Promise<FastifyInstanc
     return result;
   });
 
-  const webDirectory = fileURLToPath(new URL("../../web/dist", import.meta.url));
-  if (existsSync(webDirectory)) {
-    await app.register(fastifyStatic, { root: webDirectory, wildcard: false });
+  const webDirectory = options.webDirectory === false
+    ? undefined
+    : options.webDirectory ?? fileURLToPath(new URL("../../web/dist", import.meta.url));
+  if (webDirectory && existsSync(webDirectory)) {
+    await app.register(fastifyStatic, { root: webDirectory });
     app.setNotFoundHandler((request, reply) => {
       if (request.url.startsWith("/api/")) return reply.status(404).send({ error: "not_found", message: "API route not found" });
       return reply.sendFile("index.html");

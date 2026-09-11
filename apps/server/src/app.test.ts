@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import type { FastifyInstance } from "fastify";
@@ -287,5 +287,24 @@ describe("Knowt API", () => {
     expect(updated.statusCode, updated.body).toBe(200);
     expect(updated.json().hotkeys.search).toBe("Mod+F");
     expect((await app.inject({ method: "GET", url: "/api/settings" })).json().hotkeys.search).toBe("Mod+F");
+  });
+
+  it("serves frontend assets created after the server starts", async () => {
+    await app.close();
+    const webDirectory = join(directory, "web");
+    mkdirSync(join(webDirectory, "assets"), { recursive: true });
+    writeFileSync(join(webDirectory, "index.html"), '<script type="module" src="/assets/current.js"></script>');
+    app = await buildApp({
+      databasePath: join(directory, "static.sqlite"),
+      watchInbox: false,
+      webDirectory,
+    });
+
+    writeFileSync(join(webDirectory, "assets", "current.js"), "window.knowtLoaded = true;");
+    const asset = await app.inject({ method: "GET", url: "/assets/current.js" });
+
+    expect(asset.statusCode).toBe(200);
+    expect(asset.headers["content-type"]).toContain("javascript");
+    expect(asset.body).toBe("window.knowtLoaded = true;");
   });
 });
