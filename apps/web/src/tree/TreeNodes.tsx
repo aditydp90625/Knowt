@@ -2,6 +2,7 @@ import { ActionIcon, Badge, Group, Stack, Text, Tooltip } from "@mantine/core";
 import { IconChevronDown, IconChevronRight, IconDots, IconFileText, IconFolder } from "@tabler/icons-react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import * as ContextMenu from "@radix-ui/react-context-menu";
+import { knowledgeTypeClass, knowledgeTypeColor } from "../knowledge-types";
 import type { TreeItemData } from "./layout";
 
 export interface TreeNodeActions {
@@ -67,7 +68,7 @@ export function KnowledgeTreeNode({ data, selected }: NodeProps) {
   const value = data as TreeItemData;
   const knowledge = value.knowledge!;
   const card = (
-    <div className={`tree-card knowledge-card type-${knowledge.knowledgeTypeId}${selected ? " selected" : ""}`} onDoubleClick={() => actions?.openNode(knowledge.id)}>
+    <div className={`tree-card knowledge-card ${knowledgeTypeClass(knowledge.knowledgeType)}${selected ? " selected" : ""}`} onDoubleClick={() => actions?.openNode(knowledge.id)}>
       <Handle type="target" position={Position.Top} />
       <Group gap="xs" wrap="nowrap">
         <IconFileText size={16} stroke={1.8} />
@@ -76,7 +77,7 @@ export function KnowledgeTreeNode({ data, selected }: NodeProps) {
       </Group>
       {value.detail === "close" && (
         <Group gap={5} mt={7}>
-          <Badge size="xs" variant="light">{knowledge.knowledgeType}</Badge>
+          <Badge size="xs" variant="filled" color={knowledgeTypeColor(knowledge.knowledgeType)}>{knowledge.knowledgeType}</Badge>
           {knowledge.tags.slice(0, 2).map((tag) => <Badge size="xs" variant="outline" color="gray" key={tag}>{tag}</Badge>)}
         </Group>
       )}

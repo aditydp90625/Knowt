@@ -4,6 +4,7 @@ import { ActionIcon, Badge, Box, Group, Loader, Paper, ScrollArea, Text, TextInp
 import { IconArrowRight, IconFolder, IconSearch, IconX } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../api/client";
+import { knowledgeTypeColor } from "../knowledge-types";
 
 interface Props {
   onReveal(node: SearchResult, workspace: Workspace): void;
@@ -42,7 +43,7 @@ function SearchRow({ node, onReveal }: { node: SearchResult; onReveal(workspace:
   const excerpt = node.excerpt.replaceAll("[[", "").replaceAll("]]", "");
   return (
     <Box className="search-row">
-      <Group justify="space-between" wrap="nowrap"><Text fw={650} size="sm" lineClamp={1}>{node.title}</Text><Badge size="xs" variant="light">{node.knowledgeType}</Badge></Group>
+      <Group justify="space-between" wrap="nowrap"><Text fw={650} size="sm" lineClamp={1}>{node.title}</Text><Badge size="xs" variant="filled" color={knowledgeTypeColor(node.knowledgeType)}>{node.knowledgeType}</Badge></Group>
       <Text size="xs" c="dimmed" lineClamp={2} mt={3}>{excerpt}</Text>
       <Group gap="xs" mt={8}>
         <button className="search-path" onClick={() => onReveal("topic")}><IconFolder size={13} />{node.topicPath.map((item) => item.name).join(" / ")}<IconArrowRight size={12} /></button>

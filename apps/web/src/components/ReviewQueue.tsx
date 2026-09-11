@@ -5,6 +5,7 @@ import { notifications } from "@mantine/notifications";
 import { IconAlertTriangle, IconCheck, IconChecks, IconFolderPlus, IconInbox, IconX } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api/client";
+import { knowledgeTypeClass, knowledgeTypeColor } from "../knowledge-types";
 import { MarkdownEditor } from "./MarkdownEditor";
 
 interface Props {
@@ -81,7 +82,7 @@ export function ReviewQueue({ categories, knowledgeTypes }: Props) {
         <Group p="md" justify="space-between"><div><Title order={3}>Review Queue</Title><Text size="sm" c="dimmed">Staged, never canonical until approved</Text></div><Badge size="lg" variant="light">{query.data?.length ?? 0}</Badge></Group>
         <ScrollArea className="review-list-scroll">
           {query.data?.length === 0 && <Stack align="center" p="xl"><IconInbox size={36} color="var(--mantine-color-dimmed)" /><Text c="dimmed" ta="center">No proposals are waiting for review.</Text></Stack>}
-          {query.data?.map((proposal) => <button key={proposal.id} className={`proposal-list-item${proposal.id === selected?.id ? " active" : ""}`} onClick={() => setSelectedId(proposal.id)}><Text fw={650} size="sm" ta="left" lineClamp={2}>{proposal.payload.title}</Text><Group gap={5} mt={5}><Badge size="xs">{proposal.payload.knowledgeType}</Badge><Text size="xs" c="dimmed">{proposal.source.system}</Text></Group></button>)}
+          {query.data?.map((proposal) => <button key={proposal.id} className={`proposal-list-item ${knowledgeTypeClass(proposal.payload.knowledgeType)}${proposal.id === selected?.id ? " active" : ""}`} onClick={() => setSelectedId(proposal.id)}><Text fw={650} size="sm" ta="left" lineClamp={2}>{proposal.payload.title}</Text><Group gap={5} mt={5}><Badge size="xs" variant="filled" color={knowledgeTypeColor(proposal.payload.knowledgeType)}>{proposal.payload.knowledgeType}</Badge><Text size="xs" c="dimmed">{proposal.source.system}</Text></Group></button>)}
         </ScrollArea>
       </aside>
       <main className="review-detail">

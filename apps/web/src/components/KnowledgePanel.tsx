@@ -30,6 +30,7 @@ import rehypeSanitize from "rehype-sanitize";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import { api } from "../api/client";
+import { knowledgeTypeColor } from "../knowledge-types";
 import { MarkdownEditor } from "./MarkdownEditor";
 
 interface DraftSeed {
@@ -205,7 +206,7 @@ export function KnowledgePanel({ node, draft, categories, knowledgeTypes, onSave
             <Box>
               <Text fz={25} fw={760} lh={1.2}>{node.title}</Text>
               <Group gap={6} mt="sm">
-                <Badge>{node.knowledgeType}</Badge>
+                <Badge variant="filled" color={knowledgeTypeColor(node.knowledgeType)}>{node.knowledgeType}</Badge>
                 {node.tags.map((tag) => <Badge variant="outline" color="gray" key={tag}>{tag}</Badge>)}
               </Group>
               <Group gap="xs" mt="md" c="dimmed"><Text size="xs">Topic: {node.topicPath.map((item) => item.name).join(" / ")}</Text><Text size="xs">Project: {node.projectPath.map((item) => item.name).join(" / ")}</Text></Group>
