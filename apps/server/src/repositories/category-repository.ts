@@ -1,4 +1,4 @@
-import type { Category, CategoryDeletionPreview, PathPart, Workspace } from "@knowt/contracts";
+import type { Category, CategoryDeletionPreview, CategorySearchResult, PathPart, Workspace } from "@knowt/contracts";
 import { and, eq, isNull, ne, sql } from "drizzle-orm";
 import type { DatabaseContext } from "../db/database.js";
 import { categories, nodes } from "../db/schema.js";
@@ -37,6 +37,28 @@ export class CategoryRepository {
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     }));
+  }
+
+  search(query: string): CategorySearchResult[] {
+    const normalizedQuery = normalizeLabel(query);
+    if (!normalizedQuery) return [];
+    return (["topic", "project"] as const).flatMap((workspace) => this.list(workspace)
+      .filter((category) => normalizeLabel(category.name).includes(normalizedQuery))
+      .map((category) => ({
+        kind: "category" as const,
+        id: category.id,
+        name: category.name,
+        workspace,
+        path: this.path(category.id),
+        directNodeCount: category.directNodeCount,
+        descendantNodeCount: category.descendantNodeCount,
+      })))
+      .sort((left, right) => {
+        const leftExact = normalizeLabel(left.name) === normalizedQuery ? 0 : 1;
+        const rightExact = normalizeLabel(right.name) === normalizedQuery ? 0 : 1;
+        return leftExact - rightExact || left.name.localeCompare(right.name);
+      })
+      .slice(0, 100);
   }
 
   get(id: string): CategoryRow {

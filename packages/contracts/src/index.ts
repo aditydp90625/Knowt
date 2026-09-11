@@ -98,9 +98,22 @@ export interface Taxonomy {
   nodes: KnowledgeNode[];
 }
 
-export interface SearchResult extends KnowledgeNode {
+export interface NodeSearchResult extends KnowledgeNode {
+  kind: "node";
   excerpt: string;
 }
+
+export interface CategorySearchResult {
+  kind: "category";
+  id: string;
+  name: string;
+  workspace: Workspace;
+  path: PathPart[];
+  directNodeCount: number;
+  descendantNodeCount: number;
+}
+
+export type SearchResult = NodeSearchResult | CategorySearchResult;
 
 export interface CategoryDeletionPreview {
   category: Category;

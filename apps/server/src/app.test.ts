@@ -91,6 +91,22 @@ describe("Knowt API", () => {
     expect(preview.json().destination.id).toBe(fpga.id);
   });
 
+  it("searches category names as well as knowledge nodes", async () => {
+    const topic = (await app.inject({ method: "GET", url: "/api/taxonomy/topic" })).json();
+    const digital = topic.categories.find((item: { name: string }) => item.name === "Digital Design");
+    const category = (await app.inject({ method: "POST", url: "/api/categories", payload: {
+      workspace: "topic", parentId: digital.id, name: "FPGA Interfaces",
+    } })).json();
+    const results = (await app.inject({ method: "GET", url: "/api/search?q=interfaces" })).json();
+    expect(results).toContainEqual(expect.objectContaining({
+      kind: "category",
+      id: category.id,
+      name: "FPGA Interfaces",
+      workspace: "topic",
+      path: [expect.objectContaining({ name: "Digital Design" }), expect.objectContaining({ name: "FPGA Interfaces" })],
+    }));
+  });
+
   it("stages structured submissions until approval", async () => {
     const response = await app.inject({ method: "POST", url: "/api/inbox/submissions", payload: {
       schema_version: "1.0",

@@ -1,4 +1,4 @@
-import type { KnowledgeNode, NodeWrite, RevisionSummary, SearchResult, Workspace } from "@knowt/contracts";
+import type { KnowledgeNode, NodeSearchResult, NodeWrite, RevisionSummary, Workspace } from "@knowt/contracts";
 import { and, asc, desc, eq, inArray, isNull } from "drizzle-orm";
 import type { DatabaseContext } from "../db/database.js";
 import { knowledgeTypes, nodeTags, nodes, revisions, tags } from "../db/schema.js";
@@ -164,7 +164,7 @@ export class NodeRepository {
     return this.update(nodeId, { ...snapshot, expectedVersion: this.get(nodeId, true).version }, `Restored revision ${revision.revisionNumber}`);
   }
 
-  search(query: string): SearchResult[] {
+  search(query: string): NodeSearchResult[] {
     const match = ftsQuery(query);
     if (!match) return [];
     const rows = this.context.sqlite.prepare(
@@ -173,7 +173,7 @@ export class NodeRepository {
               CASE WHEN lower(title) = lower(?) THEN -100000 ELSE bm25(nodes_fts, 8.0, 1.0, 3.0) END AS score
        FROM nodes_fts WHERE nodes_fts MATCH ? ORDER BY score LIMIT 100`,
     ).all(query.trim(), match) as Array<{ node_id: string; excerpt: string; score: number }>;
-    return rows.map((row) => ({ ...this.get(row.node_id), excerpt: row.excerpt }));
+    return rows.map((row) => ({ kind: "node", ...this.get(row.node_id), excerpt: row.excerpt }));
   }
 
   rebuildSearchIndex(): void {

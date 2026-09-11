@@ -165,7 +165,10 @@ export async function buildApp(options: AppOptions = {}): Promise<FastifyInstanc
     return nodeRepository.restoreRevision(id, revisionId);
   });
 
-  app.get("/api/search", async (request) => nodeRepository.search(searchQuery.parse(request.query).q));
+  app.get("/api/search", async (request) => {
+    const { q } = searchQuery.parse(request.query);
+    return [...categoryRepository.search(q), ...nodeRepository.search(q)].slice(0, 100);
+  });
 
   app.get("/api/layout/:workspace/:rootId", async (request) => {
     const { workspace, rootId } = layoutParams.parse(request.params);

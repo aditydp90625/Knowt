@@ -27,7 +27,7 @@ interface Props {
   categories: Category[];
   knowledge: KnowledgeNode[];
   layout: LayoutState | null | undefined;
-  focusedNodeId?: string | undefined;
+  focusedItemId?: string | undefined;
   actions: TreeNodeActions;
   onOpenNode(id: string): void;
   onSaveLayout(state: LayoutState): void;
@@ -37,7 +37,7 @@ interface Props {
 
 function Canvas(props: Props) {
   const colorScheme = useComputedColorScheme("light");
-  const { actions, focusedNodeId, onMoveItem, onOpenNode, onSaveLayout, onSelectionChange: reportSelection } = props;
+  const { actions, focusedItemId, onMoveItem, onOpenNode, onSaveLayout, onSelectionChange: reportSelection } = props;
   const expanded = useMemo(() => new Set(props.layout?.expandedCategoryIds ?? [props.rootId]), [props.layout, props.rootId]);
   const expandedRef = useRef(expanded);
   const [detail, setDetail] = useState<TreeItemData["detail"]>("medium");
@@ -101,11 +101,10 @@ function Canvas(props: Props) {
   }, [reportSelection]);
 
   useEffect(() => {
-    if (!focusedNodeId || !instance.current) return;
-    const id = `knowledge:${focusedNodeId}`;
-    const node = instance.current.getNode(id);
+    if (!focusedItemId || !instance.current) return;
+    const node = instance.current.getNode(focusedItemId);
     if (node) void instance.current.setCenter(node.position.x + 100, node.position.y + 42, { zoom: 1.15, duration: 650 });
-  }, [focusedNodeId, nodes]);
+  }, [focusedItemId, nodes]);
 
   return (
     <ReactFlow<Node<TreeItemData>>

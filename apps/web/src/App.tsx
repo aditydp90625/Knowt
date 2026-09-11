@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { Category, KnowledgeNode, LayoutState, SearchResult, Workspace } from "@knowt/contracts";
+import type { Category, CategorySearchResult, KnowledgeNode, LayoutState, NodeSearchResult, Workspace } from "@knowt/contracts";
 import {
   ActionIcon,
   AppShell,
@@ -92,7 +92,7 @@ export function App() {
   const saveLayout = useMutation({ mutationFn: (state: LayoutState) => api.saveLayout(workspace, rootId!, state) });
 
   const [selection, setSelection] = useState<Selection>({ categoryIds: [], nodeIds: [] });
-  const [focusedNodeId, setFocusedNodeId] = useState<string>();
+  const [focusedTreeItemId, setFocusedTreeItemId] = useState<string>();
   const [openNodeIds, setOpenNodeIds] = useState<string[]>([]);
   const [activeNodeId, setActiveNodeId] = useState<string>();
   const [splitNodeId, setSplitNodeId] = useState<string>();
@@ -315,7 +315,7 @@ export function App() {
     deleteItem: (kind, id) => void deleteItem(kind, id),
   }), [categories, deleteItem, openNodes, selection, toggleCategory]);
 
-  const revealSearch = (node: SearchResult, targetWorkspace: Workspace) => {
+  const revealNodeSearch = (node: NodeSearchResult, targetWorkspace: Workspace) => {
     setSection("knowledge");
     setWorkspace(targetWorkspace);
     const path = targetWorkspace === "topic" ? node.topicPath : node.projectPath;
@@ -324,8 +324,20 @@ export function App() {
     const state = { ...emptyLayout(path[0].id), expandedCategoryIds: path.map((item) => item.id) };
     setLayout(state);
     void api.saveLayout(targetWorkspace, path[0].id, state);
-    setFocusedNodeId(node.id);
-    window.setTimeout(() => setFocusedNodeId(undefined), 2_000);
+    setFocusedTreeItemId(`knowledge:${node.id}`);
+    window.setTimeout(() => setFocusedTreeItemId(undefined), 2_000);
+  };
+
+  const revealCategorySearch = (category: CategorySearchResult) => {
+    setSection("knowledge");
+    setWorkspace(category.workspace);
+    if (!category.path[0]) return;
+    setRootByWorkspace((current) => ({ ...current, [category.workspace]: category.path[0]!.id }));
+    const state = { ...emptyLayout(category.path[0].id), expandedCategoryIds: category.path.map((item) => item.id) };
+    setLayout(state);
+    void api.saveLayout(category.workspace, category.path[0].id, state);
+    setFocusedTreeItemId(`category:${category.id}`);
+    window.setTimeout(() => setFocusedTreeItemId(undefined), 2_000);
   };
 
   const activeNode = knowledge.find((item) => item.id === activeNodeId);
@@ -406,7 +418,7 @@ export function App() {
       <AppShell.Header className="app-header">
         <Group h="100%" px="md" wrap="nowrap">
           <Group gap="xs" className="brand"><div className="brand-mark"><IconSitemap size={20} /></div><Text fw={800} fz="lg">Knowt</Text></Group>
-          <SearchBox onReveal={revealSearch} />
+          <SearchBox onRevealNode={revealNodeSearch} onOpenNode={(node) => { setSection("knowledge"); openNode(node.id); }} onRevealCategory={revealCategorySearch} />
           <Button leftSection={<IconPlus size={16} />} onClick={() => {
             const preferred = selectedCategory?.id ?? rootId;
             if (preferred) setDraftCategoryId(preferred);
@@ -438,7 +450,7 @@ export function App() {
                 </Group>}
               </Group>
               <div className="canvas-wrap" onKeyDown={(event) => { if (event.key === "Enter" && selection.nodeIds.length) openNodes(selection.nodeIds); }}>
-                {rootId && layout && <TreeCanvas key={`${workspace}:${rootId}`} workspace={workspace} rootId={rootId} categories={workspaceCategories} knowledge={knowledge} layout={layout} focusedNodeId={focusedNodeId} actions={treeActions} onOpenNode={openNode} onSaveLayout={saveCurrentLayout} onMoveItem={moveItem} onSelectionChange={updateSelection} />}
+                {rootId && layout && <TreeCanvas key={`${workspace}:${rootId}`} workspace={workspace} rootId={rootId} categories={workspaceCategories} knowledge={knowledge} layout={layout} focusedItemId={focusedTreeItemId} actions={treeActions} onOpenNode={openNode} onSaveLayout={saveCurrentLayout} onMoveItem={moveItem} onSelectionChange={updateSelection} />}
               </div>
             </section>
             {detailOpen && (
