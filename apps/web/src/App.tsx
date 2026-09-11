@@ -176,17 +176,69 @@ export function App() {
     });
   }, [invalidateKnowledge, knowledge, showError]);
 
+  const deleteSelection = useCallback(async (target: Selection) => {
+    const nodeIds = [...new Set(target.nodeIds)].filter((id) => knowledge.some((node) => node.id === id));
+    const selectedCategories = [...new Set(target.categoryIds)]
+      .map((id) => categories.find((category) => category.id === id))
+      .filter((category): category is Category => Boolean(category));
+    if (!nodeIds.length && !selectedCategories.length) return;
+    if (selectedCategories.some((category) => category.protected)) {
+      showError(new Error("Protected fallback categories cannot be deleted"));
+      return;
+    }
+    try {
+      const previews = await Promise.all(selectedCategories.map((category) => api.deletionPreview(category.id)));
+      const conflicts = previews.filter((preview) => preview.hasNameConflicts);
+      if (conflicts.length) {
+        showError(new Error(`Resolve naming conflicts beneath ${conflicts.map((preview) => preview.category.name).join(", ")} before deleting the selection`));
+        return;
+      }
+      const categoryById = new Map(categories.map((category) => [category.id, category]));
+      const depth = (category: Category): number => {
+        let value = 0;
+        let current = category.parentId ? categoryById.get(category.parentId) : undefined;
+        while (current) { value += 1; current = current.parentId ? categoryById.get(current.parentId) : undefined; }
+        return value;
+      };
+      const categoriesDeepestFirst = [...selectedCategories].sort((left, right) => depth(right) - depth(left));
+      const total = nodeIds.length + selectedCategories.length;
+      modals.openConfirmModal({
+        title: `Delete ${total} selected ${total === 1 ? "item" : "items"}?`,
+        children: <Stack gap="xs">
+          {nodeIds.length > 0 && <Text size="sm">{nodeIds.length} knowledge {nodeIds.length === 1 ? "node will" : "nodes will"} move to recoverable Trash.</Text>}
+          {selectedCategories.length > 0 && <Text size="sm">{selectedCategories.length} {selectedCategories.length === 1 ? "category will" : "categories will"} be deleted. Their remaining contents will move to the nearest surviving parent.</Text>}
+        </Stack>,
+        labels: { confirm: "Delete selected", cancel: "Cancel" },
+        confirmProps: { color: "red" },
+        onConfirm: async () => {
+          try {
+            await Promise.all(nodeIds.map(api.deleteNode));
+            for (const category of categoriesDeepestFirst) await api.deleteCategory(category.id);
+            const removed = new Set(nodeIds);
+            setOpenNodeIds((current) => current.filter((id) => !removed.has(id)));
+            setActiveNodeId((current) => current && removed.has(current) ? undefined : current);
+            setSplitNodeId((current) => current && removed.has(current) ? undefined : current);
+            setSelection({ categoryIds: [], nodeIds: [] });
+            setLayout((current) => current ? ({ ...current, positions: {} }) : current);
+            await invalidateKnowledge();
+            notifications.show({ color: "orange", message: `${total} selected ${total === 1 ? "item" : "items"} deleted` });
+          } catch (error) { showError(error); }
+        },
+      });
+    } catch (error) { showError(error); }
+  }, [categories, invalidateKnowledge, knowledge, showError]);
+
   useEffect(() => {
     const handleDeleteKey = (event: KeyboardEvent) => {
-      if (section !== "knowledge" || event.key !== "Delete" || !selection.nodeIds.length) return;
+      if (section !== "knowledge" || event.key !== "Delete" || (!selection.nodeIds.length && !selection.categoryIds.length)) return;
       const target = event.target as HTMLElement | null;
       if (target?.matches("input, textarea, [contenteditable='true']")) return;
       event.preventDefault();
-      trashNodes(selection.nodeIds);
+      void deleteSelection(selection);
     };
     window.addEventListener("keydown", handleDeleteKey);
     return () => window.removeEventListener("keydown", handleDeleteKey);
-  }, [section, selection.nodeIds, trashNodes]);
+  }, [deleteSelection, section, selection]);
 
   const moveItem = useCallback(async (kind: "category" | "knowledge", id: string, destinationCategoryId: string) => {
     try {
@@ -222,8 +274,14 @@ export function App() {
   };
 
   const deleteItem = useCallback(async (kind: "category" | "knowledge", id: string) => {
+    const selectedCount = selection.categoryIds.length + selection.nodeIds.length;
+    const clickedIsSelected = kind === "category" ? selection.categoryIds.includes(id) : selection.nodeIds.includes(id);
+    if (clickedIsSelected && selectedCount > 1) {
+      await deleteSelection(selection);
+      return;
+    }
     if (kind === "knowledge") {
-      trashNodes(selection.nodeIds.includes(id) && selection.nodeIds.length > 1 ? selection.nodeIds : [id]);
+      trashNodes([id]);
       return;
     }
     try {
@@ -235,7 +293,7 @@ export function App() {
         onConfirm: async () => { await api.deleteCategory(id); await invalidateKnowledge(); },
       });
     } catch (error) { showError(error); }
-  }, [invalidateKnowledge, selection.nodeIds, showError, trashNodes]);
+  }, [deleteSelection, invalidateKnowledge, selection, showError, trashNodes]);
 
   const treeActions = useMemo<TreeNodeActions>(() => ({
     toggle: toggleCategory,
@@ -376,7 +434,7 @@ export function App() {
                   {selection.nodeIds.length > 0 && <Button variant="light" size="sm" leftSection={<IconFolderOpen size={16} />} onClick={() => openNodes(selection.nodeIds)}>Open{selection.nodeIds.length > 1 ? ` ${selection.nodeIds.length}` : ""}</Button>}
                   <Button variant="light" size="sm" leftSection={<IconArrowsMove size={16} />} disabled={selectionHasProtectedCategory} onClick={() => { setMoveDestination(null); setMoveDialog(selection); }}>Move</Button>
                   <Button variant="light" size="sm" leftSection={<IconLibraryPlus size={16} />} disabled={selectionHasProtectedCategory} onClick={() => startNameDialog({ mode: "parent", title: "Create parent around selection" })}>Create Parent</Button>
-                  {selection.nodeIds.length > 0 && <Button variant="light" color="red" size="sm" leftSection={<IconTrash size={16} />} onClick={() => trashNodes(selection.nodeIds)}>Trash</Button>}
+                  <Tooltip label={selectionHasProtectedCategory ? "Protected fallback categories cannot be deleted" : "Delete selected nodes and categories"}><Button variant="light" color="red" size="sm" leftSection={<IconTrash size={16} />} disabled={selectionHasProtectedCategory} onClick={() => void deleteSelection(selection)}>Delete</Button></Tooltip>
                 </Group>}
               </Group>
               <div className="canvas-wrap" onKeyDown={(event) => { if (event.key === "Enter" && selection.nodeIds.length) openNodes(selection.nodeIds); }}>
