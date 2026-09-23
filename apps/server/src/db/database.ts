@@ -1,11 +1,16 @@
 import { copyFileSync, mkdirSync, rmSync } from "node:fs";
 import { dirname } from "node:path";
-import { fileURLToPath } from "node:url";
 import { DatabaseSync } from "node:sqlite";
 import { drizzle, type NodeSQLiteDatabase } from "drizzle-orm/node-sqlite";
 import { migrate } from "./migrations.js";
 
-export const DEFAULT_DATABASE_PATH = fileURLToPath(new URL("../../../../data/knowt.sqlite", import.meta.url));
+function defaultDataDirectory(): string {
+  if (process.env.LOCALAPPDATA) return `${process.env.LOCALAPPDATA}/Knowt/data`;
+  if (process.env.XDG_DATA_HOME) return `${process.env.XDG_DATA_HOME}/Knowt`;
+  return `${process.env.HOME ?? process.cwd()}/.local/share/Knowt`;
+}
+
+export const DEFAULT_DATABASE_PATH = `${defaultDataDirectory()}/knowt.sqlite`;
 
 export class DatabaseContext {
   sqlite!: DatabaseSync;

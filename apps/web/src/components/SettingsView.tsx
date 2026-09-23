@@ -25,7 +25,7 @@ export function SettingsView() {
   const client = useQueryClient();
   const { setColorScheme } = useMantineColorScheme();
   const query = useQuery({ queryKey: ["settings"], queryFn: api.settings });
-  const [form, setForm] = useState<AppSettings>({ theme: "system", inboxPath: "data/inbox", rejectedRetentionDays: 30, hotkeys: { ...defaultHotkeys } });
+  const [form, setForm] = useState<AppSettings>({ theme: "system", inboxPath: "", rejectedRetentionDays: 30, hotkeys: { ...defaultHotkeys } });
   const duplicateHotkeys = Object.values(form.hotkeys).filter((hotkey, index, all) => all.indexOf(hotkey) !== index);
   const applyTheme = (theme: AppSettings["theme"]) => setColorScheme(theme === "system" ? "auto" : theme);
   useEffect(() => {

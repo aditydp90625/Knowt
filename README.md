@@ -1,20 +1,29 @@
 # Knowt
 
-Knowt is a local-first engineering knowledge system built around one canonical Knowledge Node and two independent ways to organise it: topical knowledge and project context. This repository contains the non-AI V1 MVP described in the planning specification.
+Knowt is a local-first engineering knowledge system. It stores Knowledge Nodes, topical and project trees, revisions, attachments and a Review Queue on the user’s own computer.
 
-## What is included
+## Beta user quick start
 
-- A spatial, downward knowledge tree with pan, zoom, semantic detail levels, staged expand/collapse controls, persisted expansion/viewport state, drag-to-reparent, right-click actions and multi-select `Create Parent`.
-- Separate Topical and Project workspaces. Every Knowledge Node has exactly one path in each workspace and one Knowledge Type.
-- A Milkdown Crepe visual Markdown editor with tabs, split view, tags, source metadata, images/attachments and immutable revisions on every explicit save.
-- Full-text keyword search with paths back into either tree.
-- Structured JSON ingestion through MCP, REST and a watched inbox, with optional raster image attachments, schema validation, idempotent submission IDs, quarantine and an explicit Review Queue.
-- Configurable keyboard shortcuts powered by TanStack Hotkeys, including search, creation, selection actions, tree expansion and workspace navigation.
-- Recoverable Trash, protected fallback categories and a redistribution preview before category deletion.
-- Versioned ZIP export/import of the SQLite database, settings and attachments, with validation and a retained backup before replacement.
-- No AI runtime or Ollama dependency. The later AI boundary can be added behind the application services without changing the canonical data model.
+Beta users do not need to edit the source code. Clone the repository, then run the setup script from PowerShell:
 
-## Run locally
+```powershell
+git clone <repository-url>
+cd Knowt
+powershell -ExecutionPolicy Bypass -File .\tools\setup-beta.ps1
+powershell -ExecutionPolicy Bypass -File .\tools\start-beta.ps1
+```
+
+The setup script checks Git, Node.js and pnpm, installs dependencies and builds Knowt. The start script launches the local server and opens the browser.
+
+Knowt creates its private database under `%LOCALAPPDATA%\\Knowt\\data`; the repository does not contain the maintainer’s database or Knowledge Nodes.
+
+See [docs/user-installation.md](docs/user-installation.md) for the complete beta-user guide.
+
+## Codex integration
+
+Beta users should use Codex for MCP integration. Knowt exposes a local MCP endpoint at `http://127.0.0.1:4318/mcp`. See [docs/chatgpt-personalisation.md](docs/chatgpt-personalisation.md). No tunnel-client or public endpoint is required.
+
+## Developer setup
 
 Prerequisites: Node.js 24 or newer and pnpm 11.
 
@@ -23,8 +32,6 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-Open `http://127.0.0.1:5173`. Vite proxies `/api` to the Fastify server on `http://127.0.0.1:4318`.
-
 For a production-style run:
 
 ```powershell
@@ -32,38 +39,16 @@ pnpm build
 pnpm --filter @knowt/server start
 ```
 
-Then open `http://127.0.0.1:4318`.
+Run verification with `pnpm check`. See [docs/developer-setup.md](docs/developer-setup.md).
 
-Run the complete verification suite with:
+## Release packaging
 
 ```powershell
-pnpm check
+pnpm package:windows
 ```
 
-## Local data
+This writes `tmp/Knowt-windows-x64.zip`, bundles the pinned Node.js Windows x64 runtime, and checks that private databases, attachments, environment files and Codex configuration are excluded.
 
-By default, runtime data is stored below `data/` and is ignored by Git:
+## Data and privacy
 
-- `data/knowt.sqlite` — canonical SQLite database
-- `data/attachments/` — content-addressed attachment files
-- `data/inbox/` — watched JSON submissions
-- `data/processed/` — accepted inbox files
-- `data/quarantine/` — invalid inbox files plus error reports
-
-Set `KNOWT_DB_PATH` to override the database file and `KNOWT_PORT` to override the server port. The inbox folder can be changed from Settings.
-
-The external ingestion contract is [contracts/inbox-v1.schema.json](contracts/inbox-v1.schema.json). Files should be written atomically, for example by writing a temporary file and then renaming it into the inbox.
-
-For ChatGPT, use the OpenAI Secure MCP Tunnel workflow in [docs/chatgpt-integration.md](docs/chatgpt-integration.md). `tunnel-client` runs beside Knowt and forwards the private `http://127.0.0.1:4318/mcp` endpoint to the selected ChatGPT developer-mode app without exposing Knowt publicly. The repository-level `.codex/config.toml` remains as a direct local fallback for Codex. Both paths expose only current topical headings and stage all submitted packets for review.
-
-## Repository map
-
-```text
-apps/web/             React application and interaction layer
-apps/server/          Fastify API, application services and persistence
-packages/contracts/   Shared Zod schemas and TypeScript domain contracts
-contracts/            Versioned external JSON contracts
-docs/                 Architecture and implementation notes
-```
-
-See [docs/implementation-plan.md](docs/implementation-plan.md) for the architectural boundaries and extension points.
+Runtime data is stored outside the repository under `%LOCALAPPDATA%\\Knowt\\data`: the SQLite database, attachments, inbox, processed submissions and quarantine. Do not commit or distribute these files. See [docs/privacy-and-data.md](docs/privacy-and-data.md).

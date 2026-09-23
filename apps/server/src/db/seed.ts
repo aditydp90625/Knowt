@@ -83,7 +83,7 @@ export function seedDatabase(context: DatabaseContext): void {
     if (!context.orm.select().from(settings).where(eq(settings.key, "app")).get()) {
       context.orm.insert(settings).values({
         key: "app",
-        valueJson: JSON.stringify({ theme: "system", inboxPath: "data/inbox", rejectedRetentionDays: 30 }),
+        valueJson: JSON.stringify({ theme: "system", inboxPath: "", rejectedRetentionDays: 30 }),
         updatedAt: now,
       }).run();
     }

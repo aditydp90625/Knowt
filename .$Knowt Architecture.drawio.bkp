@@ -1,0 +1,64 @@
+<mxfile host="Electron">
+  <diagram name="Page-1" id="nyyylKJt8GHaXoSqswK2">
+    <mxGraphModel dx="2007" dy="701" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="-6tiHBc7DYchZH8Foa8x-16" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;dashed=1;strokeColor=#6c8ebf;verticalAlign=top;" value="Web" vertex="1">
+          <mxGeometry height="210" width="330" x="-30" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="-6tiHBc7DYchZH8Foa8x-17" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;dashed=1;strokeColor=none;fillStyle=hatch;strokeWidth=13;" value="" vertex="1">
+          <mxGeometry height="140" width="150" x="150" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="-6tiHBc7DYchZH8Foa8x-15" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;dashed=1;strokeColor=#82b366;verticalAlign=top;" value="Local" vertex="1">
+          <mxGeometry height="210" width="360" x="300" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="-6tiHBc7DYchZH8Foa8x-1" parent="1" style="whiteSpace=wrap;html=1;fillColor=none;" value="Nodejs Application&lt;div&gt;Backend&lt;/div&gt;" vertex="1">
+          <mxGeometry height="80" width="80" x="454" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="-6tiHBc7DYchZH8Foa8x-2" parent="1" style="whiteSpace=wrap;html=1;fillColor=none;" value="Frontend UI&lt;div&gt;(Localhost webserver)&lt;/div&gt;" vertex="1">
+          <mxGeometry height="80" width="80" x="550" y="310" as="geometry" />
+        </mxCell>
+        <mxCell id="-6tiHBc7DYchZH8Foa8x-3" parent="1" style="whiteSpace=wrap;html=1;fillColor=none;" value="Local MCP server" vertex="1">
+          <mxGeometry height="80" width="80" x="360" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="-6tiHBc7DYchZH8Foa8x-21" edge="1" parent="1" source="-6tiHBc7DYchZH8Foa8x-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.25;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;" target="-6tiHBc7DYchZH8Foa8x-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="-6tiHBc7DYchZH8Foa8x-22" edge="1" parent="1" source="-6tiHBc7DYchZH8Foa8x-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.75;exitDx=0;exitDy=0;entryX=0;entryY=0.75;entryDx=0;entryDy=0;" target="-6tiHBc7DYchZH8Foa8x-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="-6tiHBc7DYchZH8Foa8x-4" parent="1" style="whiteSpace=wrap;html=1;fillColor=none;" value="Codex Chats and Learning" vertex="1">
+          <mxGeometry height="80" width="80" x="180" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="-6tiHBc7DYchZH8Foa8x-18" edge="1" parent="1" source="-6tiHBc7DYchZH8Foa8x-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="-6tiHBc7DYchZH8Foa8x-8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="-6tiHBc7DYchZH8Foa8x-5" parent="1" style="whiteSpace=wrap;html=1;fillColor=none;" value="ChatGPT Chats and Learning" vertex="1">
+          <mxGeometry height="80" width="80" x="30" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="-6tiHBc7DYchZH8Foa8x-6" parent="1" style="whiteSpace=wrap;html=1;fillColor=none;" value="Personalisation Message" vertex="1">
+          <mxGeometry height="40" width="140" x="80" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="-6tiHBc7DYchZH8Foa8x-7" parent="1" style="whiteSpace=wrap;html=1;fillColor=none;" value="Internet" vertex="1">
+          <mxGeometry height="80" width="80" x="-30" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="-6tiHBc7DYchZH8Foa8x-8" parent="1" style="whiteSpace=wrap;html=1;fillColor=none;" value="OpenAI Secure Tunnel" vertex="1">
+          <mxGeometry height="40" width="260" x="160" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="-6tiHBc7DYchZH8Foa8x-20" edge="1" parent="1" source="-6tiHBc7DYchZH8Foa8x-9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="-6tiHBc7DYchZH8Foa8x-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="-6tiHBc7DYchZH8Foa8x-23" edge="1" parent="1" source="-6tiHBc7DYchZH8Foa8x-9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.75;entryY=1;entryDx=0;entryDy=0;" target="-6tiHBc7DYchZH8Foa8x-8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="-6tiHBc7DYchZH8Foa8x-9" parent="1" style="whiteSpace=wrap;html=1;fillColor=none;" value="Tunnel Client" vertex="1">
+          <mxGeometry height="80" width="80" x="360" y="310" as="geometry" />
+        </mxCell>
+        <mxCell id="-6tiHBc7DYchZH8Foa8x-24" parent="1" style="whiteSpace=wrap;html=1;fillColor=none;" value="SQLite Local database" vertex="1">
+          <mxGeometry height="80" width="80" x="550" y="410" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

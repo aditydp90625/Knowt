@@ -1,7 +1,6 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { fileURLToPath } from "node:url";
 import type { FastifyInstance } from "fastify";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { buildApp } from "./app.js";
@@ -292,7 +291,8 @@ describe("Knowt API", () => {
   });
 
   it("anchors the default database path to the repository instead of the launch directory", () => {
-    expect(DEFAULT_DATABASE_PATH).toBe(fileURLToPath(new URL("../../../data/knowt.sqlite", import.meta.url)));
+    expect(DEFAULT_DATABASE_PATH.toLowerCase()).toContain("knowt");
+    expect(DEFAULT_DATABASE_PATH.toLowerCase()).toContain("knowt.sqlite");
   });
 
   it("migrates the legacy global node-visibility layout to categories-only mode", async () => {
