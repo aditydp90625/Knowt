@@ -1,5 +1,6 @@
-import { copyFileSync, mkdirSync, rmSync } from "node:fs";
-import { dirname } from "node:path";
+import { copyFileSync, cpSync, existsSync, mkdirSync, rmSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { DatabaseSync } from "node:sqlite";
 import { drizzle, type NodeSQLiteDatabase } from "drizzle-orm/node-sqlite";
 import { migrate } from "./migrations.js";
@@ -12,12 +13,46 @@ function defaultDataDirectory(): string {
 
 export const DEFAULT_DATABASE_PATH = `${defaultDataDirectory()}/knowt.sqlite`;
 
+const LEGACY_DATABASE_PATH = fileURLToPath(new URL("../../../../data/knowt.sqlite", import.meta.url));
+
+function databaseHasNodes(path: string): boolean {
+  if (!existsSync(path)) return false;
+  try {
+    const database = new DatabaseSync(path);
+    const result = database.prepare("SELECT COUNT(*) AS count FROM nodes").get() as { count: number };
+    database.close();
+    return result.count > 0;
+  } catch {
+    return false;
+  }
+}
+
+function migrateLegacyDataIfNeeded(path: string): void {
+  if (path !== DEFAULT_DATABASE_PATH || !existsSync(LEGACY_DATABASE_PATH)) return;
+  if (databaseHasNodes(path) || !databaseHasNodes(LEGACY_DATABASE_PATH)) return;
+
+  mkdirSync(dirname(path), { recursive: true });
+  const legacy = new DatabaseSync(LEGACY_DATABASE_PATH);
+  legacy.exec("PRAGMA wal_checkpoint(TRUNCATE)");
+  legacy.close();
+  copyFileSync(LEGACY_DATABASE_PATH, path);
+
+  for (const suffix of ["-wal", "-shm"]) {
+    rmSync(`${path}${suffix}`, { force: true });
+  }
+
+  const legacyAttachments = resolve(dirname(LEGACY_DATABASE_PATH), "attachments");
+  const targetAttachments = resolve(dirname(path), "attachments");
+  if (existsSync(legacyAttachments)) cpSync(legacyAttachments, targetAttachments, { recursive: true, force: true });
+}
+
 export class DatabaseContext {
   sqlite!: DatabaseSync;
   orm!: NodeSQLiteDatabase;
 
   constructor(public readonly path = process.env.KNOWT_DB_PATH ?? DEFAULT_DATABASE_PATH) {
     if (path !== ":memory:") mkdirSync(dirname(path), { recursive: true });
+    migrateLegacyDataIfNeeded(path);
     this.open();
   }
 
