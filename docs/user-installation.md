@@ -17,11 +17,33 @@ Knowt listens only on `127.0.0.1` and is not published to the internet.
 
 This Git-based beta workflow uses the Node.js installation on the user’s computer. The separate packaged-release workflow is still experimental and is not required for beta users.
 
-## Persistence
+## Database storage
 
 Knowt stores data under `%LOCALAPPDATA%\\Knowt\\data`, separate from the cloned repository. The database is `knowt.sqlite`; attachments and inbox data are stored alongside it. Create a test node, close Knowt, run `start-beta.ps1` again and confirm that the node remains. The installation folder contains application files only.
 
 If an older checkout contains `data\\knowt.sqlite`, Knowt performs a one-time migration into the per-user location when the per-user database is missing or empty. A non-empty per-user database is never overwritten.
+
+## Start Knowt automatically at Windows login
+
+Database storage and automatic startup are separate settings. To have Knowt start whenever you log into Windows, run this once from the repository folder:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\\tools\\enable-startup.ps1
+```
+
+This creates a shortcut in your personal Windows Startup folder. It does not require administrator access. Knowt will start its local server and open the browser after login.
+
+To disable automatic startup:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\\tools\\disable-startup.ps1
+```
+
+Alternatively, combine setup and startup configuration:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\\tools\\setup-beta.ps1 -EnableStartup
+```
 
 ## Launching Knowt
 

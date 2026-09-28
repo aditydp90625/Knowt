@@ -13,7 +13,7 @@ powershell -ExecutionPolicy Bypass -File .\tools\setup-beta.ps1
 powershell -ExecutionPolicy Bypass -File .\tools\start-beta.ps1
 ```
 
-The setup script checks Git, Node.js and pnpm, installs dependencies and builds Knowt. The start script launches the local server and opens the browser.
+The setup script checks Git, Node.js and pnpm, installs dependencies and builds Knowt. The start script launches the local server and opens the browser. To start Knowt automatically when Windows logs in, run `powershell -ExecutionPolicy Bypass -File .\\tools\\enable-startup.ps1` once. This is separate from database storage.
 
 Knowt creates its private database under `%LOCALAPPDATA%\\Knowt\\data`; the repository does not contain the maintainer’s database or Knowledge Nodes.
 

@@ -8,6 +8,8 @@
     "package:windows": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/package-windows.ps1",
     "beta:setup": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/setup-beta.ps1",
     "beta:start": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/start-beta.ps1",
+    "beta:enable-startup": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/enable-startup.ps1",
+    "beta:disable-startup": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/disable-startup.ps1",
     "build": "pnpm --filter @knowt/contracts build && pnpm --filter @knowt/server build && pnpm --filter @knowt/web build",
     "test": "pnpm -r --if-present test",
     "typecheck": "pnpm -r --if-present typecheck",

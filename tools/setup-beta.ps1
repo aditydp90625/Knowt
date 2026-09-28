@@ -1,5 +1,8 @@
 [CmdletBinding()]
-param([switch]$ForceInstall)
+param(
+  [switch]$ForceInstall,
+  [switch]$EnableStartup
+)
 
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
@@ -67,3 +70,7 @@ try { Run-Checked (Join-Path $webDirectory "node_modules/.bin/vite.cmd") @("buil
 finally { Pop-Location }
 
 Write-Host "Setup complete. Start Knowt with: pnpm beta:start"
+if ($EnableStartup) {
+  & (Join-Path $root "tools\enable-startup.ps1")
+  if ($LASTEXITCODE -ne 0) { throw "Could not enable Knowt startup." }
+}
