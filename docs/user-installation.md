@@ -5,21 +5,33 @@
 Install Git for Windows and Node.js 24 LTS or newer first. Then open PowerShell and run:
 
 ```powershell
-git clone <repository-url>
+git clone https://github.com/aditydp90625/Knowt.git
 cd Knowt
 powershell -ExecutionPolicy Bypass -File .\tools\setup-beta.ps1
 powershell -ExecutionPolicy Bypass -File .\tools\start-beta.ps1
 ```
 
-The setup script checks the prerequisites, installs the project dependencies and builds Knowt. No source-code editing is required.
+The setup script checks the prerequisites, installs the project dependencies and builds Knowt. If `pnpm` is not already installed, the script automatically tries Corepack and then npm to run the pinned pnpm version. No source-code editing or administrator access is required.
 
 Knowt listens only on `127.0.0.1` and is not published to the internet.
 
-The release includes its own Node.js runtime. Beta users do not need to install Node.js, pnpm or any developer tools.
+This Git-based beta workflow uses the Node.js installation on the user’s computer. The separate packaged-release workflow is still experimental and is not required for beta users.
 
 ## Persistence
 
-Knowt stores data under `%LOCALAPPDATA%\\Knowt\\data`. Create a test node, close Knowt, launch it again and confirm that the node remains. The installation folder contains application files only.
+Knowt stores data under `%LOCALAPPDATA%\\Knowt\\data`, separate from the cloned repository. The database is `knowt.sqlite`; attachments and inbox data are stored alongside it. Create a test node, close Knowt, run `start-beta.ps1` again and confirm that the node remains. The installation folder contains application files only.
+
+If an older checkout contains `data\\knowt.sqlite`, Knowt performs a one-time migration into the per-user location when the per-user database is missing or empty. A non-empty per-user database is never overwritten.
+
+## Launching Knowt
+
+For the Git-based beta installation, launch with:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\\tools\\start-beta.ps1
+```
+
+This starts the local server on `127.0.0.1:4318` and opens the browser. `Knowt.exe` is intended for a future self-contained ZIP release; it is not needed when using the repository setup instructions.
 
 ## Codex MCP setup
 

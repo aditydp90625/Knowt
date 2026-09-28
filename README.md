@@ -7,7 +7,7 @@ Knowt is a local-first engineering knowledge system. It stores Knowledge Nodes, 
 Beta users do not need to edit the source code. Clone the repository, then run the setup script from PowerShell:
 
 ```powershell
-git clone <repository-url>
+git clone https://github.com/aditydp90625/Knowt.git
 cd Knowt
 powershell -ExecutionPolicy Bypass -File .\tools\setup-beta.ps1
 powershell -ExecutionPolicy Bypass -File .\tools\start-beta.ps1
